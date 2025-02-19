@@ -5,9 +5,9 @@
 https://github.com/Coffee-Engine/DaveShade/blob/main/DS3.js
 */
 (function () {
-  window.daveShade3 = {};
+  window.daveshade = {};
 
-  daveShade3.createAndCompile = (GL, name, vert, frag, onError) => {
+  daveshade.createAndCompile = (GL, name, vert, frag, onError) => {
     onError =
       onError ||
       function (error) {};
