@@ -31,6 +31,8 @@ window.DaveShade = {};
         FAILURE: 0,
     };
 
+    DaveShade.IndiceIdent = "__INDICIES__";
+
     DaveShade.REGEX = {
         ATTRIBUTE: /attribute.*;/g,
     };
@@ -112,7 +114,13 @@ window.DaveShade = {};
 
     DaveShade.side = {
         FRONT:0,
-        BACK:1
+        BACK:1,
+        NEITHER: 2,
+    }
+
+    DaveShade.filtering = {
+        LINEAR: 9729,
+        NEAREST: 9728,
     }
 
     DaveShade.EZAttachColorBuffer = (GL, framebufferInfo, dsInfo, renderBufferInfo) => {
@@ -285,6 +293,7 @@ window.DaveShade = {};
             CANVAS: CANVAS,
             SHADERS: [],
             FRAMEBUFFERS: [],
+            oldAttributes: {}
         };
 
         if (SETTINGS.blendFunc) {
@@ -511,6 +520,7 @@ window.DaveShade = {};
 
                 //* The setter legacy (DS2)
                 shader.attributes[attributeDef.name].setRaw = (newValue) => {
+                    daveShadeInstance.oldAttributes[attributeDef.name] = 0;
                     GL.bindBuffer(GL.ARRAY_BUFFER, shader.attributes[attributeDef.name].buffer);
                     GL.bufferData(GL.ARRAY_BUFFER, newValue, GL.STATIC_DRAW);
                     GL.vertexAttribPointer(shader.attributes[attributeDef.name].location, shader.attributes[attributeDef.name].divisions, GL.FLOAT, false, 0, 0);
@@ -518,6 +528,8 @@ window.DaveShade = {};
 
                 //* The setter
                 shader.attributes[attributeDef.name].set = (newValue) => {
+                    if (daveShadeInstance.oldAttributes[attributeDef.name] == newValue.bufferID) return;
+                    daveShadeInstance.oldAttributes[attributeDef.name] = newValue.bufferID;
                     GL.bindBuffer(GL.ARRAY_BUFFER, newValue);
                     GL.vertexAttribPointer(shader.attributes[attributeDef.name].location, shader.attributes[attributeDef.name].divisions, GL.FLOAT, false, 0, 0);
                 };
@@ -550,14 +562,14 @@ window.DaveShade = {};
 
             //* The buffer setter! the Legacy ONE!
             shader.setBuffersRaw = (attributeJSON) => {
-                //* Attribute keys. Whoopee
-                const attributeKeys = Object.keys(attributeJSON);
-
                 //? Loop through the keys
-                for (let keyID = 0; keyID < attributeKeys.length; keyID++) {
-                    const key = attributeKeys[keyID];
-
+                shader.usingIndices = false;
+                for (let key in attributeJSON) {
                     //* if it exists set the attribute
+                    if (key == DaveShade.IndiceIdent) {
+                        //Do nothing
+                        continue;
+                    }
                     if (shader.attributes[key]) {
                         shader.attributes[key].setRaw(attributeJSON[key]);
                     }
@@ -566,15 +578,20 @@ window.DaveShade = {};
 
             //* The buffer setter! the Big ONE!
             shader.setBuffers = (attributeJSON) => {
-                //* Attribute keys. Whoopee
-                const attributeKeys = Object.keys(attributeJSON);
-
                 //? Loop through the keys
-                for (let keyID = 0; keyID < attributeKeys.length; keyID++) {
-                    const key = attributeKeys[keyID];
-
+                shader.usingIndices = false;
+                for (let key in attributeJSON) {
                     //* if it exists set the attribute
-                    if (shader.attributes[key]) {
+                    if (key == DaveShade.IndiceIdent) {
+                        const newValue = attributeJSON[key];
+                        shader.usingIndices = true;
+
+                        //Make sure we don't already have the indice bound
+                        if (daveShadeInstance.oldAttributes[DaveShade.IndiceIdent] == newValue.bufferID) return;
+                        daveShadeInstance.oldAttributes[DaveShade.IndiceIdent] = newValue.bufferID;
+                        GL.bindBuffer(GL.ARRAY_BUFFER, newValue);
+                    }
+                    else if (shader.attributes[key]) {
                         shader.attributes[key].set(attributeJSON[key]);
                     }
                 }
@@ -582,8 +599,17 @@ window.DaveShade = {};
 
             shader.drawFromBuffers = (triAmount, renderMode) => {
                 GL.useProgram(shader.program);
-                GL.drawArrays(renderMode || GL.TRIANGLES, 0, triAmount);
+
+                //Draw using indicies if we are using indicies
+                if (!shader.usingIndices) GL.drawArrays(renderMode || GL.TRIANGLES, 0, triAmount);
+                else GL.drawElements(renderMode || GL.TRIANGLES, triAmount, GL.UNSIGNED_INT, 0);
+
+                //Increment drawn tri count
                 daveShadeInstance.triCount += triAmount;
+            };
+
+            shader.dispose = () => {
+                daveShadeInstance.clearShaderFromMemory(shader);
             };
 
             //*Add it to the list of shaders to dispose of when the instance no longer exists.
@@ -637,9 +663,29 @@ window.DaveShade = {};
                 height = data.height;
             } else {
                 daveShadeInstance.GL.texImage2D(daveShadeInstance.GL.TEXTURE_2D, 0, daveShadeInstance.GL.RGBA, width, height, 0, daveShadeInstance.GL.RGBA, daveShadeInstance.GL.UNSIGNED_BYTE, data);
+
+                daveShadeInstance.GL.texParameteri(daveShadeInstance.GL.TEXTURE_2D, daveShadeInstance.GL.TEXTURE_WRAP_S, daveShadeInstance.GL.CLAMP_TO_EDGE);
+                daveShadeInstance.GL.texParameteri(daveShadeInstance.GL.TEXTURE_2D, daveShadeInstance.GL.TEXTURE_WRAP_T, daveShadeInstance.GL.CLAMP_TO_EDGE);
+                daveShadeInstance.GL.texParameteri(daveShadeInstance.GL.TEXTURE_2D, daveShadeInstance.GL.TEXTURE_MIN_FILTER, daveShadeInstance.GL.LINEAR);
             }
 
-            return { texture: texture, width: width, height: height };
+            //Create our texture object
+            const textureOBJ = { 
+                texture: texture, width: width, height: height,
+                currentFilter: GL.LINEAR,
+                setFiltering: (newFilter, isMin) => {
+                    isMin = isMin || false;
+
+                    if (textureOBJ.currentFilter == newFilter) return;
+
+                    daveShadeInstance.GL.bindTexture(daveShadeInstance.GL.TEXTURE_2D, texture);
+                    daveShadeInstance.GL.texParameteri(daveShadeInstance.GL.TEXTURE_2D, daveShadeInstance.GL.TEXTURE_MAG_FILTER, newFilter);
+
+                    textureOBJ.currentFilter = newFilter;
+                }
+            };
+
+            return textureOBJ;
         };
 
         //Framebuffer stuff
@@ -717,13 +763,26 @@ window.DaveShade = {};
             daveShadeInstance.GL.clear(bufferBits);
         };
 
+        daveShadeInstance.bufferID = 0;
         daveShadeInstance.buffersFromJSON = (attributeJSON) => {
             const returned = {};
             for (const key in attributeJSON) {
+                //Increment our ID
+                daveShadeInstance.bufferID++;
+
                 const element = attributeJSON[key];
                 const buffer = daveShadeInstance.GL.createBuffer();
-                GL.bindBuffer(GL.ARRAY_BUFFER, buffer);
-                GL.bufferData(GL.ARRAY_BUFFER, element, GL.STATIC_DRAW);
+                buffer.bufferID = daveShadeInstance.bufferID;
+
+                //If we have indicies use indicies
+                if (key == DaveShade.IndiceIdent) {
+                    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, buffer);
+                    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, element, GL.STATIC_DRAW);
+                }
+                else {
+                    GL.bindBuffer(GL.ARRAY_BUFFER, buffer);
+                    GL.bufferData(GL.ARRAY_BUFFER, element, GL.STATIC_DRAW);
+                }
 
                 returned[key] = buffer;
             }
