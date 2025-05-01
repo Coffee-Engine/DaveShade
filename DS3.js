@@ -132,6 +132,7 @@ window.DaveShade = {};
         //Get our color attachment
         const attachedBuffer = dsInfo.DRAWBUFFER_MANAGER ? dsInfo.DRAWBUFFER_MANAGER[`COLOR_ATTACHMENT${framebufferInfo.colorAttachments}`] : GL[`COLOR_ATTACHMENT${framebufferInfo.colorAttachments}`];
         GL.framebufferTexture2D(GL.FRAMEBUFFER, attachedBuffer, GL.TEXTURE_2D, renderBufferInfo.texture, 0);
+
         framebufferInfo.colorAttachments += 1;
     };
 
@@ -403,6 +404,7 @@ window.DaveShade = {};
                 };
             }
 
+            //? Compiling oh compiling!
             compileStatus = GL.getShaderInfoLog(shader.vertex.shader);
             if (compileStatus.length > 0) {
                 console.error(`shader not compiled!\nclearing memory\nCompile Log\n***\n${compileStatus}\n***`);
@@ -412,6 +414,7 @@ window.DaveShade = {};
                 };
             }
 
+            //Oooh ohh ohh
             compileStatus = GL.getShaderInfoLog(shader.fragment.shader);
             if (compileStatus.length > 0) {
                 console.error(`shader not compiled!\nclearing memory\nCompile Log\n***\n${compileStatus}\n***`);
@@ -532,7 +535,7 @@ window.DaveShade = {};
 
                 //* The setter legacy (DS2)
                 shader.attributes[attributeDef.name].setRaw = (newValue) => {
-                    daveShadeInstance.oldAttributes[attributeDef.name] = 0;
+                    daveShadeInstance.oldAttributes[attributeID] = 0;
                     GL.bindBuffer(GL.ARRAY_BUFFER, shader.attributes[attributeDef.name].buffer);
                     GL.bufferData(GL.ARRAY_BUFFER, newValue, GL.STATIC_DRAW);
                     GL.vertexAttribPointer(shader.attributes[attributeDef.name].location, shader.attributes[attributeDef.name].divisions, GL.FLOAT, false, 0, 0);
@@ -540,8 +543,8 @@ window.DaveShade = {};
 
                 //* The setter
                 shader.attributes[attributeDef.name].set = (newValue) => {
-                    if (daveShadeInstance.oldAttributes[attributeDef.name] == newValue.bufferID) return;
-                    daveShadeInstance.oldAttributes[attributeDef.name] = newValue.bufferID;
+                    if (daveShadeInstance.oldAttributes[attributeID] == newValue.bufferID) return;
+                    daveShadeInstance.oldAttributes[attributeID] = newValue.bufferID;
                     GL.bindBuffer(GL.ARRAY_BUFFER, newValue);
                     GL.vertexAttribPointer(shader.attributes[attributeDef.name].location, shader.attributes[attributeDef.name].divisions, GL.FLOAT, false, 0, 0);
                 };
@@ -623,6 +626,19 @@ window.DaveShade = {};
             shader.dispose = () => {
                 daveShadeInstance.clearShaderFromMemory(shader);
             };
+
+            //* Quick function
+            shader.setUniforms = (uniforms) => {
+                //Make sure we have an object
+                if (typeof uniforms != "object" || Array.isArray(uniforms)) return;
+                
+                //Loop through keys
+                for (let key in uniforms) {
+                    if (shader.uniforms[key]) {
+                        shader.uniforms[key].value = uniforms[key];
+                    }
+                }
+            }
 
             //*Add it to the list of shaders to dispose of when the instance no longer exists.
             daveShadeInstance.SHADERS.push(shader);
@@ -816,7 +832,7 @@ window.DaveShade = {};
         }
 
         //Framebuffer stuff
-        daveShadeInstance.createFramebuffer = (width, height, attachments) => {
+        daveShadeInstance.createFramebuffer = (width, height, attachments, antiAliasing) => {
             const framebuffer = {
                 buffer: GL.createFramebuffer(),
                 attachments: [],
