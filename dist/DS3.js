@@ -1002,6 +1002,8 @@ window.DaveShade = {};
             return Array.from(output);
         }
 
+        //? Make sure we are rendering to the canvas!!!
+        daveShadeInstance.renderToCanvas();
         return daveShadeInstance;
     };  
 
