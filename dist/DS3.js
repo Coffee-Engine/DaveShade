@@ -27,7 +27,69 @@ window.DaveShade = {};
 
 //Module Creation
 DaveShade.module = class {
-    constructor() {};
+    COMPILE_STATUS = {
+        SUCCESS: 1,
+        FAILURE: 0
+    }
+
+    //Regex items
+    REGEX = {
+        ATTRIBUTE: /attribute.*;/g,
+    }
+
+    //Things we might want
+    CANVAS = null;
+    SHADERS = [];
+    FRAMEBUFFERS = [];
+    ATTRIBUTE_BINDINGS = {};
+
+    //Enums set at start time
+    RENDER_TYPE = {};
+    SETTERS = {};
+    SIDE = {};
+    FILTERING = {};
+    RENDERBUFFER_TYPE = {};
+    CUBEMAP_ORDER = [];
+    CLEAR_TARGET = {};
+
+    TYPE = "GENERIC";
+
+    //Private variable for the buffer incrementing system
+    #BUFFER_ID = 0;
+
+    attachColorBuffer() { console.error(`"attachColorBuffer" not defined in module ${this.TYPE}!`) }
+
+    createShader() { console.error(`"createShader" not defined in module ${this.TYPE}!`) }
+    disposeShader() { console.error(`"disposeShader" not defined in module ${this.TYPE}!`) }
+
+    useZBuffer() { console.error(`"useZBuffer" not defined in module ${this.TYPE}!`) }
+    cullFace() { console.error(`"cullFace" not defined in module ${this.TYPE}!`) }
+
+    renderToCanvas() { console.error(`"renderToCanvas" not defined in module ${this.TYPE}!`) }
+
+    createTexture() { console.error(`"createTexture" not defined in module ${this.TYPE}!`) }
+    createTextureCube() { console.error(`"createTextureCube" not defined in module ${this.TYPE}!`) }
+    createTexture3D() { console.error(`"createTexture3D" not defined in module ${this.TYPE}!`) }
+
+    buffersFromJSON() { console.error(`"buffersFromJSON" not defined in module ${this.TYPE}!`) }
+
+    dispose() { delete this; }
+
+    clear() { console.error(`"clear" not defined in module ${this.TYPE}!`) }
+
+    setup() { console.warn(`${this.TYPE} doesn't have a "setup" function. Does it exist?`) }
+    setupTextureReader() { console.warn(`${this.TYPE} doesn't have a "setupTextureReader" function. Does it exist?`) }
+    readTexture() {}
+
+    constructor(CANVAS) {
+        //Remove ourselves if canvas doesn't exist
+        if (!CANVAS) {
+            this.dispose();
+            return;
+        }
+
+        this.setup();
+    }
 }
 (function () {
     //Compile status enum
