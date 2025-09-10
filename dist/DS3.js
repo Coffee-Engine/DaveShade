@@ -322,8 +322,9 @@ window.DaveShade = {};
             GL.enable(GL.BLEND);
             GL.blendEquation(GL[daveShadeInstance.blendFunc[0]]);
             GL.blendFunc(GL[daveShadeInstance.blendFunc[1]], GL[daveShadeInstance.blendFunc[2]]);
-            GL.pixelStorei(GL.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
         }
+        
+        GL.pixelStorei(GL.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
 
         //*When we need to split the shader into 2 parts due to it being in a single file. good for keeping storage sizes down
         daveShadeInstance.decomposeShader = (shaderCode) => {
@@ -533,22 +534,6 @@ window.DaveShade = {};
                 GL.bindBuffer(GL.ARRAY_BUFFER, shader.attributes[attributeDef.name].buffer);
                 GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(65536), GL.STATIC_DRAW);
 
-                //* The setter legacy (DS2)
-                shader.attributes[attributeDef.name].setRaw = (newValue) => {
-                    daveShadeInstance.oldAttributes[attributeID] = 0;
-                    GL.bindBuffer(GL.ARRAY_BUFFER, shader.attributes[attributeDef.name].buffer);
-                    GL.bufferData(GL.ARRAY_BUFFER, newValue, GL.STATIC_DRAW);
-                    GL.vertexAttribPointer(shader.attributes[attributeDef.name].location, shader.attributes[attributeDef.name].divisions, GL.FLOAT, false, 0, 0);
-                };
-
-                //* The setter
-                shader.attributes[attributeDef.name].set = (newValue) => {
-                    if (daveShadeInstance.oldAttributes[attributeID] == newValue.bufferID) return;
-                    daveShadeInstance.oldAttributes[attributeID] = newValue.bufferID;
-                    GL.bindBuffer(GL.ARRAY_BUFFER, newValue);
-                    GL.vertexAttribPointer(shader.attributes[attributeDef.name].location, shader.attributes[attributeDef.name].divisions, GL.FLOAT, false, 0, 0);
-                };
-
                 //* Assign values dependant on types
                 switch (shader.attributes[attributeDef.name].type) {
                     case 5126:
@@ -571,8 +556,27 @@ window.DaveShade = {};
                         shader.attributes[attributeDef.name].divisions = 1;
                         break;
                 }
+                
+                const location = shader.attributes[attributeDef.name].location;
+                const divisions = shader.attributes[attributeDef.name].divisions;
 
-                GL.vertexAttribPointer(shader.attributes[attributeDef.name].location, shader.attributes[attributeDef.name].divisions, GL.FLOAT, false, 0, 0);
+                //* The setter legacy (DS2)
+                shader.attributes[attributeDef.name].setRaw = (newValue) => {
+                    daveShadeInstance.oldAttributes[location] = 0;
+                    GL.bindBuffer(GL.ARRAY_BUFFER, shader.attributes[attributeDef.name].buffer);
+                    GL.bufferData(GL.ARRAY_BUFFER, newValue, GL.STATIC_DRAW);
+                    GL.vertexAttribPointer(location, divisions, GL.FLOAT, false, 0, 0);
+                };
+
+                //* The setter
+                shader.attributes[attributeDef.name].set = (newValue) => {
+                    if (daveShadeInstance.oldAttributes[location] == newValue.bufferID) return;
+                    daveShadeInstance.oldAttributes[location] = newValue.bufferID;
+                    GL.bindBuffer(GL.ARRAY_BUFFER, newValue);
+                    GL.vertexAttribPointer(location, divisions, GL.FLOAT, false, 0, 0);
+                };
+
+                GL.vertexAttribPointer(location, divisions, GL.FLOAT, false, 0, 0);
             });
 
             //* The buffer setter! the Legacy ONE!
@@ -596,6 +600,9 @@ window.DaveShade = {};
                 //? Loop through the keys
                 shader.usingIndices = false;
                 for (let key in attributeJSON) {
+                    //Make sure we are using a buffer
+                    if (!(attributeJSON[key] instanceof WebGLBuffer)) return;
+
                     //* if it exists set the attribute
                     if (key == DaveShade.IndiceIdent) {
                         const newValue = attributeJSON[key];
@@ -832,7 +839,7 @@ window.DaveShade = {};
         }
 
         //Framebuffer stuff
-        daveShadeInstance.createFramebuffer = (width, height, attachments, antiAliasing) => {
+        daveShadeInstance.createFramebuffer = (width, height, attachments) => {
             const framebuffer = {
                 buffer: GL.createFramebuffer(),
                 attachments: [],
@@ -930,6 +937,12 @@ window.DaveShade = {};
                 returned[key] = buffer;
             }
 
+            //Remove buffers
+            returned.dispose = () => {
+                //It's gone :(
+                for (const key in attributeJSON) { GL.deleteBuffer(returned[key]); }
+            }
+
             return returned;
         };
 
@@ -961,22 +974,24 @@ window.DaveShade = {};
         daveShadeInstance.textureReadingQuad = daveShadeInstance.buffersFromJSON({
             a_position: new Float32Array(
                 [
+                    1,-1,0,1,
+                    -1,-1,0,1,
+                    1,1,0,1,
+
                     -1,-1,0,1,
                     -1,1,0,1,
-                    1,-1,0,1,
-                    -1,1,0,1,
-                    1,-1,0,1,
-                    1,1,0,1,
+                    1,1,0,1
                 ]
             ),
-            a_texCoord: new Float32Array(
+            a_texcoord: new Float32Array(
                 [
-                    0,1,
-                    0,0,
-                    1,1,
-                    0,0,
-                    1,1,
                     1,0,
+                    0,0,
+                    1,1,
+
+                    0,0,
+                    0,1,
+                    1,1
                 ]
             )
         });
