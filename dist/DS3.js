@@ -983,7 +983,7 @@ window.DaveShade = {};
                     1,1,0,1
                 ]
             ),
-            a_texcoord: new Float32Array(
+            a_texCoord: new Float32Array(
                 [
                     1,0,
                     0,0,
