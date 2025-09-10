@@ -952,13 +952,13 @@ window.DaveShade = {};
         //? create stuff required to render these temporary textures
         daveShadeInstance.textureReadingShader = daveShadeInstance.createShader(`precision highp float;
         attribute vec4 a_position;
-        attribute vec2 a_texCoord;
+        attribute vec2 a_texcoord;
 
         varying vec2 v_texCoord;
         
         void main() {
             gl_Position = a_position;
-            v_texCoord = a_texCoord;
+            v_texCoord = a_texcoord;
         }
         `,`precision highp float;
         varying vec2 v_texCoord;
@@ -983,7 +983,7 @@ window.DaveShade = {};
                     1,1,0,1
                 ]
             ),
-            a_texCoord: new Float32Array(
+            a_texcoord: new Float32Array(
                 [
                     1,0,
                     0,0,
