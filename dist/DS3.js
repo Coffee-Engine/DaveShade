@@ -24,6 +24,11 @@
 */
 
 window.DaveShade = {};
+
+//Module Creation
+DaveShade.module = class {
+    constructor() {};
+}
 (function () {
     //Compile status enum
     DaveShade.COMPILE_STATUS = {
