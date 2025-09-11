@@ -108,6 +108,15 @@ DaveShade.shader = class {
     FRAGMENT = {};
     PROGRAM = null;
     PARENT_MODULE = null;
+    
+    UNIFORM_INDICIES = [];
+    ACTIVE_UNIFORMS = {};
+    UNIFORMS = {};
+
+    TEXTURE_COUNT = 0;
+
+    //Just compatibility
+    get uniforms() { return this.UNIFORMS; }
 
     use() {
         this.PARENT_MODULE.useProgram(this.PROGRAM);
@@ -117,6 +126,70 @@ DaveShade.shader = class {
 //Now for the base webGL module
 DaveShade.webGLModule = class extends DaveShade.module {
     GL_VERSION = 2;
+
+    _poachShaderUniforms(SHADER) {
+        //* Grab the uniforms
+        SHADER.UNIFORM_INDICIES = [...Array(GL.getProgramParameter(SHADER.PROGRAM, this.GL.ACTIVE_UNIFORMS)).keys()];
+        SHADER.ACTIVE_UNIFORMS = GL.getActiveUniforms(SHADER.PROGRAM, SHADER.UNIFORM_INDICIES, this.GL.UNIFORM_TYPE);
+        SHADER.TEXTURE_COUNT = 0;
+
+        //* use the program while we assign stuff
+        GL.useProgram(SHADER.PROGRAM);
+
+        //* Loop through the uniforms
+        for (let id = 0; id < shader.activeUniformIDs.length; id++) {
+            const uniformInfo = this.GL.getActiveUniform(SHADER.PROGRAM, id);
+            const uniformName = uniformInfo.name.split("[")[0];
+            const isArray = uniformInfo.name.includes("[");
+
+            //differentiate arrays and
+            if (isArray) {
+                const arrayLength = uniformInfo.size;
+                SHADER.uniforms[uniformName] = [];
+
+                for (let index = 0; index < arrayLength; index++) {
+                    const location = GL.getUniformLocation(SHADER.PROGRAM, `${uniformName}[${index}]`);
+
+                    SHADER.uniforms[uniformName].push({
+                        location: location,
+                        type: uniformInfo.type,
+                        isArray: isArray,
+                        "#value": null,
+
+                        set value(value) {
+                            this.GL.useProgram(SHADER.PROGRAM);
+                            SHADER.UNIFORMS[uniformName]["#value"] = value;
+                            DaveShade.setters[uniformInfo.type](GL, location, value, uniformInfo);
+                        },
+
+                        get value() { return SHADER.UNIFORMS[uniformName]["#value"]; },
+                    });
+                }
+            } else {
+                const location = GL.getUniformLocation(SHADER.PROGRAM, uniformName);
+
+                SHADER.UNIFORMS[uniformName] = {
+                    location: location,
+                    type: uniformInfo.type,
+                    isArray: isArray,
+                    "#value": null,
+
+                    set value(value) {
+                        this.GL.useProgram(SHADER.PROGRAM);
+                        SHADER.UNIFORMS[uniformName]["#value"] = value;
+                        DaveShade.setters[uniformInfo.type](GL, location, value, uniformInfo);
+                    },
+
+                    get value() { return SHADER.UNIFORMS[uniformName]["#value"]; },
+                };
+            }
+
+            if (uniformInfo.type == 35678) {
+                uniformInfo.SAMPLER_ID = SHADER.TEXTURE_COUNT;
+                SHADER.TEXTURE_COUNT += 1;
+            }
+        }
+    }
 
     createShader(VERTEX, FRAGMENT) {
         //Create our shader and add it to the list
@@ -176,6 +249,9 @@ DaveShade.webGLModule = class extends DaveShade.module {
         //Assign the parent module and then return it.
         this.SHADERS.push(createdShader);
         createdShader.PARENT_MODULE = this;
+
+        //Make sure to poach stuff too
+        this._poachShaderUniforms(createdShader);
         return createdShader;
     }
     
@@ -283,6 +359,44 @@ DaveShade.webGLModule = class extends DaveShade.module {
         this.DEPTH_FUNC.GEQUAL = this.GL.GEQUAL;
         this.DEPTH_FUNC.GREATER = this.GL.GREATER;
         this.DEPTH_FUNC.ALWAYS = this.GL.ALWAYS;
+
+        //Setters
+        
+        //We clamp the boolean
+        this.SETTERS[this.GL.BOOL] = (LOCATION, VALUE) => { this.GL.uniform1ui(LOCATION, Math.max(Math.min(1, Math.floor(VALUE)), 0)); }
+
+        //Make sure integers are rounded
+        this.SETTERS[this.GL.INT] = (LOCATION, VALUE) => { this.GL.uniform1i(LOCATION, Math.floor(VALUE)); }
+        this.SETTERS[this.GL.UNSIGNED_INT] = (LOCATION, VALUE) => { this.GL.uniform1ui(LOCATION, Math.floor(VALUE)); }
+
+        //Then the float likes
+        this.SETTERS[this.GL.FLOAT] = (LOCATION, VALUE) => { this.GL.uniform1f(LOCATION, VALUE); }
+        this.SETTERS[this.GL.FLOAT_VEC2] = (LOCATION, VALUE) => { this.GL.uniform2fv(LOCATION, VALUE); }
+        this.SETTERS[this.GL.FLOAT_VEC3] = (LOCATION, VALUE) => { this.GL.uniform3fv(LOCATION, VALUE); }
+        this.SETTERS[this.GL.FLOAT_VEC4] = (LOCATION, VALUE) => { this.GL.uniform4fv(LOCATION, VALUE); }
+        
+        this.SETTERS[this.GL.FLOAT_MAT2] = (LOCATION, VALUE) => { this.GL.uniformMatrix2fv(LOCATION, VALUE); }
+        this.SETTERS[this.GL.FLOAT_MAT3] = (LOCATION, VALUE) => { this.GL.uniformMatrix3fv(LOCATION, VALUE); }
+        this.SETTERS[this.GL.FLOAT_MAT4] = (LOCATION, VALUE) => { this.GL.uniformMatrix4fv(LOCATION, VALUE); }
+
+        //Finally the textures, these ones are a little more complicated
+        this.SETTERS[this.GL.SAMPLER_2D] = (LOCATION, VALUE, UNIFORM_INFO) => {
+            this.GL.activeTexture(this.GL[`TEXTURE${UNIFORM_INFO.SAMPLER_ID}`]);
+            this.GL.bindTexture(this.GL.TEXTURE_2D, VALUE);
+            this.GL.uniform1i(LOCATION, UNIFORM_INFO.SAMPLER_ID);
+        }
+
+        this.SETTERS[this.GL.SAMPLER_CUBE] = (LOCATION, VALUE, UNIFORM_INFO) => {
+            this.GL.activeTexture(this.GL[`TEXTURE${UNIFORM_INFO.SAMPLER_ID}`]);
+            this.GL.bindTexture(this.GL.TEXTURE_CUBE_MAP, VALUE);
+            this.GL.uniform1i(LOCATION, UNIFORM_INFO.SAMPLER_ID);
+        }
+
+        this.SETTERS[this.GL.SAMPLER_3D] = (LOCATION, VALUE, UNIFORM_INFO) => {
+            this.GL.activeTexture(this.GL[`TEXTURE${UNIFORM_INFO.SAMPLER_ID}`]);
+            this.GL.bindTexture(this.GL.TEXTURE_3D, VALUE);
+            this.GL.uniform1i(LOCATION, UNIFORM_INFO.SAMPLER_ID);
+        }
     }
 
     supported() { return (window.WebGLRenderingContext !== undefined); }
