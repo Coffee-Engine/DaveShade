@@ -113,6 +113,9 @@ DaveShade.shader = class {
     ACTIVE_UNIFORMS = {};
     UNIFORMS = {};
 
+    ATTRIBUTE_INDICIES = {};
+    ATTRIBUTES = {};
+
     TEXTURE_COUNT = 0;
 
     //Just compatibility
@@ -129,15 +132,15 @@ DaveShade.webGLModule = class extends DaveShade.module {
 
     _poachShaderUniforms(SHADER) {
         //* Grab the uniforms
-        SHADER.UNIFORM_INDICIES = [...Array(GL.getProgramParameter(SHADER.PROGRAM, this.GL.ACTIVE_UNIFORMS)).keys()];
-        SHADER.ACTIVE_UNIFORMS = GL.getActiveUniforms(SHADER.PROGRAM, SHADER.UNIFORM_INDICIES, this.GL.UNIFORM_TYPE);
+        SHADER.UNIFORM_INDICIES = [...Array(this.GL.getProgramParameter(SHADER.PROGRAM, this.GL.ACTIVE_UNIFORMS)).keys()];
+        SHADER.ACTIVE_UNIFORMS = this.GL.getActiveUniforms(SHADER.PROGRAM, SHADER.UNIFORM_INDICIES, this.GL.UNIFORM_TYPE);
         SHADER.TEXTURE_COUNT = 0;
 
         //* use the program while we assign stuff
-        GL.useProgram(SHADER.PROGRAM);
+        this.GL.useProgram(SHADER.PROGRAM);
 
         //* Loop through the uniforms
-        for (let id = 0; id < shader.activeUniformIDs.length; id++) {
+        for (let id = 0; id < SHADER.ACTIVE_UNIFORMS.length; id++) {
             const uniformInfo = this.GL.getActiveUniform(SHADER.PROGRAM, id);
             const uniformName = uniformInfo.name.split("[")[0];
             const isArray = uniformInfo.name.includes("[");
@@ -148,7 +151,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
                 SHADER.uniforms[uniformName] = [];
 
                 for (let index = 0; index < arrayLength; index++) {
-                    const location = GL.getUniformLocation(SHADER.PROGRAM, `${uniformName}[${index}]`);
+                    const location = this.GL.getUniformLocation(SHADER.PROGRAM, `${uniformName}[${index}]`);
 
                     SHADER.uniforms[uniformName].push({
                         location: location,
@@ -159,14 +162,14 @@ DaveShade.webGLModule = class extends DaveShade.module {
                         set value(value) {
                             this.GL.useProgram(SHADER.PROGRAM);
                             SHADER.UNIFORMS[uniformName]["#value"] = value;
-                            DaveShade.setters[uniformInfo.type](GL, location, value, uniformInfo);
+                            this.setters[uniformInfo.type](location, value, uniformInfo);
                         },
 
                         get value() { return SHADER.UNIFORMS[uniformName]["#value"]; },
                     });
                 }
             } else {
-                const location = GL.getUniformLocation(SHADER.PROGRAM, uniformName);
+                const location = this.GL.getUniformLocation(SHADER.PROGRAM, uniformName);
 
                 SHADER.UNIFORMS[uniformName] = {
                     location: location,
@@ -177,7 +180,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
                     set value(value) {
                         this.GL.useProgram(SHADER.PROGRAM);
                         SHADER.UNIFORMS[uniformName]["#value"] = value;
-                        DaveShade.setters[uniformInfo.type](GL, location, value, uniformInfo);
+                        this.SETTERS[uniformInfo.type](location, value, uniformInfo);
                     },
 
                     get value() { return SHADER.UNIFORMS[uniformName]["#value"]; },
@@ -189,6 +192,91 @@ DaveShade.webGLModule = class extends DaveShade.module {
                 SHADER.TEXTURE_COUNT += 1;
             }
         }
+    }
+
+    _poachShaderAttributes(SHADER) {
+        //* Grab the attributes
+        SHADER.ATTRIBUTE_INDICIES = [...Array(this.GL.getProgramParameter(SHADER.PROGRAM, this.GL.ACTIVE_ATTRIBUTES)).keys()];
+
+        //* Loop through the attributes
+        SHADER.ATTRIBUTE_INDICIES.forEach((attributeID) => {
+            //* Lets split the attribute definition
+            const attributeDef = this.GL.getActiveAttrib(SHADER.PROGRAM, attributeID);
+
+            //? could probably conglomerate better?
+            SHADER.ATTRIBUTES[attributeDef.name] = {
+                type: attributeDef.type,
+            };
+
+            //* Attribute Stuff
+            SHADER.ATTRIBUTES[attributeDef.name].location = this.GL.getAttribLocation(SHADER.PROGRAM, attributeDef.name);
+            this.GL.enableVertexAttribArray(SHADER.ATTRIBUTES[attributeDef.name].location);
+
+            //* Create the buffer
+            SHADER.ATTRIBUTES[attributeDef.name].buffer = this.GL.createBuffer();
+            this.GL.bindBuffer(this.GL.ARRAY_BUFFER, SHADER.ATTRIBUTES[attributeDef.name].buffer);
+            this.GL.bufferData(this.GL.ARRAY_BUFFER, new Float32Array(65536), this.GL.STATIC_DRAW);
+
+            //* Assign values dependant on types
+            switch (SHADER.ATTRIBUTES[attributeDef.name].type) {
+                case this.GL.FLOAT:
+                    SHADER.ATTRIBUTES[attributeDef.name].divisions = 1;
+                    break;
+
+                case this.GL.FLOAT_VEC2:
+                    SHADER.ATTRIBUTES[attributeDef.name].divisions = 2;
+                    break;
+
+                case this.GL.FLOAT_VEC3:
+                    SHADER.ATTRIBUTES[attributeDef.name].divisions = 3;
+                    break;
+
+                case this.GL.FLOAT_VEC4:
+                    SHADER.ATTRIBUTES[attributeDef.name].divisions = 4;
+                    break;
+
+                default:
+                    SHADER.ATTRIBUTES[attributeDef.name].divisions = 1;
+                    break;
+            }
+            
+            const location = SHADER.ATTRIBUTES[attributeDef.name].location;
+            const divisions = SHADER.ATTRIBUTES[attributeDef.name].divisions;
+
+            //* The setter legacy (DS2)
+            SHADER.ATTRIBUTES[attributeDef.name].setRaw = (newValue) => {
+                this.oldAttributes[location] = 0;
+                this.GL.bindBuffer(this.GL.ARRAY_BUFFER, SHADER.ATTRIBUTES[attributeDef.name].buffer);
+                this.GL.bufferData(this.GL.ARRAY_BUFFER, newValue, this.GL.STATIC_DRAW);
+                this.GL.vertexAttribPointer(location, divisions, this.GL.FLOAT, false, 0, 0);
+            };
+
+            //* The setter
+            SHADER.ATTRIBUTES[attributeDef.name].set = (newValue) => {
+                if (this.oldAttributes[location] == newValue.bufferID) return;
+                this.oldAttributes[location] = newValue.bufferID;
+                this.GL.bindBuffer(GL.ARRAY_BUFFER, newValue);
+                this.GL.vertexAttribPointer(location, divisions, this.GL.FLOAT, false, 0, 0);
+            };
+
+            this.GL.vertexAttribPointer(location, divisions, this.GL.FLOAT, false, 0, 0);
+        });
+
+        //* The buffer setter! the Legacy ONE!
+        SHADER.setBuffersRaw = (attributeJSON) => {
+            //? Loop through the keys
+            SHADER.usingIndices = false;
+            for (let key in attributeJSON) {
+                //* if it exists set the attribute
+                if (key == DaveShade.IndiceIdent) {
+                    //Do nothing
+                    continue;
+                }
+                if (SHADER.ATTRIBUTES[key]) {
+                    SHADER.ATTRIBUTES[key].setRaw(attributeJSON[key]);
+                }
+            }
+        };
     }
 
     createShader(VERTEX, FRAGMENT) {
@@ -246,12 +334,11 @@ DaveShade.webGLModule = class extends DaveShade.module {
             };
         }
 
-        //Assign the parent module and then return it.
-        this.SHADERS.push(createdShader);
+        //Set and find stuff we need before finally returning the created shader
         createdShader.PARENT_MODULE = this;
-
-        //Make sure to poach stuff too
         this._poachShaderUniforms(createdShader);
+        this._poachShaderAttributes(createdShader);
+        this.SHADERS.push(createdShader);
         return createdShader;
     }
     
