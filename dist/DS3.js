@@ -42,6 +42,7 @@ DaveShade.module = class {
     SHADERS = [];
     FRAMEBUFFERS = [];
     ATTRIBUTE_BINDINGS = {};
+    TRI_COUNT = 0;
 
     //Enums set at start time
     RENDER_TYPE = {};
@@ -51,6 +52,7 @@ DaveShade.module = class {
     RENDERBUFFER_TYPE = {};
     CUBEMAP_ORDER = [];
     CLEAR_TARGET = {};
+    DEPTH_FUNC = {};
 
     TYPE = "GENERIC";
 
@@ -59,38 +61,233 @@ DaveShade.module = class {
 
     attachColorBuffer() { console.error(`"attachColorBuffer" not defined in module ${this.TYPE}!`) }
 
-    createShader() { console.error(`"createShader" not defined in module ${this.TYPE}!`) }
-    disposeShader() { console.error(`"disposeShader" not defined in module ${this.TYPE}!`) }
+    createShader(VERTEX, FRAGMENT) { console.error(`"createShader" not defined in module ${this.TYPE}!`) }
+    disposeShader(SHADER) { console.error(`"disposeShader" not defined in module ${this.TYPE}!`) }
+    useProgram(PROGRAM) { console.error(`"useProgram" not defined in module ${this.TYPE}!`) }
 
     useZBuffer() { console.error(`"useZBuffer" not defined in module ${this.TYPE}!`) }
     cullFace() { console.error(`"cullFace" not defined in module ${this.TYPE}!`) }
 
     renderToCanvas() { console.error(`"renderToCanvas" not defined in module ${this.TYPE}!`) }
+    createFramebuffer(WIDTH, HEIGHT, ATTACHMENTS) { console.error(`"createFramebuffer" not defined in module ${this.TYPE}!`) }
 
     createTexture() { console.error(`"createTexture" not defined in module ${this.TYPE}!`) }
     createTextureCube() { console.error(`"createTextureCube" not defined in module ${this.TYPE}!`) }
     createTexture3D() { console.error(`"createTexture3D" not defined in module ${this.TYPE}!`) }
 
-    buffersFromJSON() { console.error(`"buffersFromJSON" not defined in module ${this.TYPE}!`) }
+    buffersFromJSON(ATTRIBUTE_JSON) { console.error(`"buffersFromJSON" not defined in module ${this.TYPE}!`) }
 
     dispose() { delete this; }
 
-    clear() { console.error(`"clear" not defined in module ${this.TYPE}!`) }
+    clear(TARGET) { console.error(`"clear" not defined in module ${this.TYPE}!`) }
 
-    setup() { console.warn(`${this.TYPE} doesn't have a "setup" function. Does it exist?`) }
-    setupTextureReader() { console.warn(`${this.TYPE} doesn't have a "setupTextureReader" function. Does it exist?`) }
-    readTexture() {}
+    setup(CANVAS, SETTINGS) { console.warn(`${this.TYPE} doesn't have a "setup" function. Does it exist?`) }
+    setupTextureReader(CANVAS, SETTINGS) { console.warn(`${this.TYPE} doesn't have a "setupTextureReader" function. Does it exist?`) }
+    readTexture(TEXTURE, X, Y, W, H) {}
 
-    constructor(CANVAS) {
+    supported() { return true }
+
+    constructor(CANVAS, SETTINGS) {
         //Remove ourselves if canvas doesn't exist
         if (!CANVAS) {
             this.dispose();
             return;
         }
 
-        this.setup();
+        SETTINGS = SETTINGS || {};
+
+        //These are seperated for cleanliness
+        this.setup(CANVAS, SETTINGS);
+        this.setupTextureReader(CANVAS, SETTINGS);
     }
 }
+
+//Define basic shader class
+DaveShade.shader = class {
+    VERTEX = {};
+    FRAGMENT = {};
+    PROGRAM = null;
+    PARENT_MODULE = null;
+
+    use() {
+        this.PARENT_MODULE.useProgram(this.PROGRAM);
+    }
+}
+
+//Now for the base webGL module
+DaveShade.webGLModule = class extends DaveShade.module {
+    GL_VERSION = 2;
+
+    createShader(VERTEX, FRAGMENT) {
+        //Create our shader and add it to the list
+        const createdShader = new DaveShade.shader();
+
+        //* Compile the vertex shader
+        createdShader.VERTEX.shader = this.GL.createShader(this.GL.VERTEX_SHADER);
+        createdShader.VERTEX.src = VERTEX;
+
+        //Set shader source first
+        this.GL.shaderSource(createdShader.VERTEX.shader, VERTEX);
+        this.GL.compileShader(createdShader.VERTEX.shader);
+
+        //? could potentially be better?
+        if (!this.GL.getShaderParameter(createdShader.VERTEX.shader, this.GL.COMPILE_STATUS)) {
+            console.error(`shader not compiled!\nclearing memory\nCompile Log\n***\n${this.GL.getShaderInfoLog(createdShader.VERTEX.shader)}\n***`);
+            this.disposeShader(createdShader);
+            return {
+                status: this.COMPILE_STATUS.FAILURE,
+            };
+        }
+
+        //* Compile the fragment shader
+        createdShader.FRAGMENT.shader = this.GL.createShader(this.GL.FRAGMENT_SHADER);
+        createdShader.FRAGMENT.src = FRAGMENT;
+
+        //Set shader source first
+        this.GL.shaderSource(createdShader.FRAGMENT.shader, FRAGMENT);
+        this.GL.compileShader(createdShader.FRAGMENT.shader);
+
+        //? could potentially be better?
+        if (!this.GL.getShaderParameter(createdShader.FRAGMENT.shader, this.GL.COMPILE_STATUS)) {
+            console.error(`shader not compiled!\nclearing memory\nCompile Log\n***\n${this.GL.getShaderInfoLog(createdShader.FRAGMENT.shader)}\n***`);
+            this.clearShaderFromMemory(createdShader);
+            return {
+                status: this.COMPILE_STATUS.FAILURE,
+            };
+        }
+
+        //* Get in the oven frank
+        createdShader.PROGRAM = this.GL.createProgram();
+
+        this.GL.attachShader(createdShader.PROGRAM, createdShader.VERTEX.shader);
+        this.GL.attachShader(createdShader.PROGRAM, createdShader.FRAGMENT.shader);
+
+        this.GL.linkProgram(createdShader.PROGRAM);
+
+        //? could potentially be better?
+        if (!this.GL.getProgramParameter(createdShader.PROGRAM, this.GL.LINK_STATUS)) {
+            console.error(`shader not compiled!\nerror in program linking!\nclearing memory\nlink log\n***\n${gl.getProgramInfoLog(createdShader.PROGRAM)}\n***`);
+            this.clearShaderFromMemory(createdShader);
+            return {
+                status: this.COMPILE_STATUS.FAILURE,
+            };
+        }
+
+        //Assign the parent module and then return it.
+        this.SHADERS.push(createdShader);
+        createdShader.PARENT_MODULE = this;
+        return createdShader;
+    }
+    
+    disposeShader(SHADER) {
+        //*Remove the shader from the list
+        if (this.SHADERS.includes(SHADER)) {
+            this.SHADERS.splice(this.SHADERS.indexOf(SHADER), 1);
+        }
+
+        //*Delete the program and shaders
+        if (SHADER.PROGRAM) {
+            GL.deleteProgram(SHADER.PROGRAM);
+        }
+        if (SHADER.VERTEX.shader) {
+            GL.deleteShader(SHADER.VERTEX.shader);
+        }
+        if (SHADER.FRAGMENT.shader) {
+            GL.deleteShader(SHADER.FRAGMENT.shader);
+        }
+    }
+    
+    useProgram(PROGRAM) {
+        this.GL.useProgram(PROGRAM);
+    }
+
+    useZBuffer(FUNC) {
+        //Classic "BOOL"
+        switch (typeof FUNC) {
+            case "boolean":
+                if (FUNC) GL.enable(GL.DEPTH_TEST);
+                else GL.disable(GL.DEPTH_TEST);
+                
+                GL.depthFunc(FUNC ? GL.LEQUAL : GL.NEVER);
+                break;
+            
+            case "number":
+                if (FUNC == this.DEPTH_FUNC.NEVER) GL.disable(GL.DEPTH_TEST);
+                else GL.enable(GL.DEPTH_TEST);
+                GL.depthFunc(FUNC);
+                break;
+        
+            default:
+                break;
+        }        
+    }
+
+    cullFace(SIDE) {
+        if (typeof SIDE != "number") return;
+
+        if (SIDE == 0) { this.GL.disable(this.GL.CULL_FACE); }
+        else {
+            this.GL.enable(this.GL.CULL_FACE);
+            this.GL.cullFace(SIDE);
+        }
+    }
+
+    clear(TARGET) {
+        if (typeof TARGET != "number") return;
+
+        this.TRI_COUNT = 0;
+        this.GL.clear(TARGET);
+    }
+
+    setup(CANVAS, SETTINGS) {
+        //I set type in here so we don't get "GENERIC" in the console
+        this.TYPE = "WEBGL";
+
+        //Try webGL2 creation first
+        this.GL = CANVAS.getContext("webgl2", SETTINGS);
+        this.VOA_MANAGER = this.GL;
+
+        //If we fail try webGL1
+        if (!this.GL) {
+            this.GL = CANVAS.getContext("webgl", SETTINGS);
+            this.GL_VERSION = 1;
+            
+            //Webgl doesn't have native support for VOAs or Multipass Rendering so we add the addon for VOAs, and extra Draw Buffers
+            this.VOA_MANAGER = this.GL.getExtension("OES_vertex_array_object");
+            this.DRAWBUFFER_MANAGER = this.GL.getExtension("WEBGL_draw_buffers");
+        } 
+        //Else we add our extensions
+        else {
+            this.COLORBUFFER_FLOAT = this.GL.getExtension("EXT_color_buffer_float");
+            this.FLOAT_BLEND = this.GL.getExtension("EXT_float_blend");
+        }
+
+        //Now we set up our variables
+        //First clear targets
+        this.CLEAR_TARGET.COLOR = this.GL.COLOR_BUFFER_BIT;
+        this.CLEAR_TARGET.DEPTH = this.GL.DEPTH_BUFFER_BIT;
+        this.CLEAR_TARGET.STENCIL = this.GL.STENCIL_BUFFER_BIT;
+
+        //Face sides
+        this.SIDE.FRONT = this.GL.FRONT;
+        this.SIDE.BACK = this.GL.BACK;
+        this.SIDE.BOTH = this.GL.FRONT_AND_BACK;
+        this.SIDE.NEITHER = 0;
+
+        //Depth Functions
+        this.DEPTH_FUNC.NEVER = this.GL.NEVER;
+        this.DEPTH_FUNC.NOTEQUAL = this.GL.NOTEQUAL;
+        this.DEPTH_FUNC.LESS = this.GL.LESS;
+        this.DEPTH_FUNC.LEQUAL = this.GL.LEQUAL;
+        this.DEPTH_FUNC.EQUAL = this.GL.EQUAL;
+        this.DEPTH_FUNC.GEQUAL = this.GL.GEQUAL;
+        this.DEPTH_FUNC.GREATER = this.GL.GREATER;
+        this.DEPTH_FUNC.ALWAYS = this.GL.ALWAYS;
+    }
+
+    supported() { return (window.WebGLRenderingContext !== undefined); }
+};
+
 (function () {
     //Compile status enum
     DaveShade.COMPILE_STATUS = {
@@ -435,80 +632,6 @@ DaveShade.module = class {
             if (vertex && !fragment) return daveShadeInstance.decomposeShader(vertex);
 
             const shader = {};
-
-            //* Compile the vertex shader
-            shader.vertex = {
-                shader: GL.createShader(GL.VERTEX_SHADER),
-                src: vertex,
-            };
-            GL.shaderSource(shader.vertex.shader, vertex);
-            GL.compileShader(shader.vertex.shader);
-
-            //? could potentially be better?
-            compileStatus = GL.getShaderParameter(shader.vertex.shader, GL.COMPILE_STATUS);
-            if (!compileStatus) {
-                console.error(`shader not compiled!\nclearing memory\nCompile Log\n***\n${GL.getShaderInfoLog(shader.vertex.shader)}\n***`);
-                daveShadeInstance.clearShaderFromMemory(shader);
-                return {
-                    status: DaveShade.COMPILE_STATUS.FAILURE,
-                };
-            }
-
-            //* Compile the fragment shader
-            shader.fragment = {
-                shader: GL.createShader(GL.FRAGMENT_SHADER),
-                src: fragment,
-            };
-            GL.shaderSource(shader.fragment.shader, fragment);
-            GL.compileShader(shader.fragment.shader);
-
-            //? could potentially be better?
-            compileStatus = GL.getShaderParameter(shader.vertex.shader, GL.COMPILE_STATUS);
-            if (!compileStatus) {
-                console.error(`shader not compiled!\nclearing memory\nCompile Log\n***\n${GL.getShaderInfoLog(shader.vertex.shader)}\n***`);
-                daveShadeInstance.clearShaderFromMemory(shader);
-                return {
-                    status: DaveShade.COMPILE_STATUS.FAILURE,
-                };
-            }
-
-            //? Compiling oh compiling!
-            compileStatus = GL.getShaderInfoLog(shader.vertex.shader);
-            if (compileStatus.length > 0) {
-                console.error(`shader not compiled!\nclearing memory\nCompile Log\n***\n${compileStatus}\n***`);
-                daveShadeInstance.clearShaderFromMemory(shader);
-                return {
-                    status: DaveShade.COMPILE_STATUS.FAILURE,
-                };
-            }
-
-            //Oooh ohh ohh
-            compileStatus = GL.getShaderInfoLog(shader.fragment.shader);
-            if (compileStatus.length > 0) {
-                console.error(`shader not compiled!\nclearing memory\nCompile Log\n***\n${compileStatus}\n***`);
-                daveShadeInstance.clearShaderFromMemory(shader);
-                return {
-                    status: DaveShade.COMPILE_STATUS.FAILURE,
-                };
-            }
-
-            //* Get in the oven frank
-            shader.program = GL.createProgram();
-
-            GL.attachShader(shader.program, shader.vertex.shader);
-            GL.attachShader(shader.program, shader.fragment.shader);
-
-            GL.linkProgram(shader.program);
-
-            //? could potentially be better?
-            compileStatus = GL.getShaderParameter(shader.vertex.shader, GL.COMPILE_STATUS);
-            if (!compileStatus) {
-                console.error(`shader not compiled!\nerror in program creation!\nclearing memory\nCompile Log\n***\n${GL.getShaderInfoLog(shader.vertex.shader)}\n***`);
-                daveShadeInstance.clearShaderFromMemory(shader);
-                return {
-                    status: DaveShade.COMPILE_STATUS.FAILURE,
-                };
-            }
 
             //* Set the compile status
             shader.status = DaveShade.COMPILE_STATUS.SUCCESS;
