@@ -1643,8 +1643,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
             daveShadeInstance.SHADERS.forEach((shader) => {
                 daveShadeInstance.clearShaderFromMemory(shader);
             });
-
-            delete GL;
+            
             if (daveShadeInstance.CANVAS.parentElement) {
                 daveShadeInstance.CANVAS.parentElement.removeChild(daveShadeInstance.CANVAS);
             }
