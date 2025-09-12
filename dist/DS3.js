@@ -40,9 +40,10 @@ DaveShade.module = class {
     //Things we might want
     CANVAS = null;
     SHADERS = [];
+    BUFFERS = [];
     FRAMEBUFFERS = [];
     ATTRIBUTE_BINDINGS = {};
-    TRI_COUNT = 0;
+    POINT_COUNT = 0;
 
     //Enums set at start time
     RENDER_TYPE = {};
@@ -57,25 +58,33 @@ DaveShade.module = class {
     TYPE = "GENERIC";
 
     //Private variable for the buffer incrementing system
-    #BUFFER_ID = 0;
-
-    attachColorBuffer() { console.error(`"attachColorBuffer" not defined in module ${this.TYPE}!`) }
+    _BUFFER_ID = 0;
 
     createShader(VERTEX, FRAGMENT) { console.error(`"createShader" not defined in module ${this.TYPE}!`) }
     disposeShader(SHADER) { console.error(`"disposeShader" not defined in module ${this.TYPE}!`) }
     useProgram(PROGRAM) { console.error(`"useProgram" not defined in module ${this.TYPE}!`) }
+    setUniform(SHADER, UNIFORM, VALUE, NO_SET_PROGRAM) {}
 
-    useZBuffer() { console.error(`"useZBuffer" not defined in module ${this.TYPE}!`) }
-    cullFace() { console.error(`"cullFace" not defined in module ${this.TYPE}!`) }
+    useZBuffer(FUNC) { console.error(`"useZBuffer" not defined in module ${this.TYPE}!`) }
+    cullFace(SIDE) { console.error(`"cullFace" not defined in module ${this.TYPE}!`) }
 
     renderToCanvas() { console.error(`"renderToCanvas" not defined in module ${this.TYPE}!`) }
     createFramebuffer(WIDTH, HEIGHT, ATTACHMENTS) { console.error(`"createFramebuffer" not defined in module ${this.TYPE}!`) }
+    useFramebuffer(FRAMEBUFFER) { console.error(`"createFramebuffer" not defined in module ${this.TYPE}!`) }
+    disposeFramebuffer(FRAMEBUFFER) { console.error(`"disposeFramebuffer" not defined in module ${this.TYPE}!`) }
+    resizeFramebuffer(FRAMEBUFFER, WIDTH, HEIGHT) { console.error(`"disposeFramebuffer" not defined in module ${this.TYPE}!`) }
 
     createTexture() { console.error(`"createTexture" not defined in module ${this.TYPE}!`) }
     createTextureCube() { console.error(`"createTextureCube" not defined in module ${this.TYPE}!`) }
     createTexture3D() { console.error(`"createTexture3D" not defined in module ${this.TYPE}!`) }
 
     buffersFromJSON(ATTRIBUTE_JSON) { console.error(`"buffersFromJSON" not defined in module ${this.TYPE}!`) }
+    disposeBuffer(BUFFER) { console.error(`"disposeBuffer" not defined in module ${this.TYPE}!`) };
+
+    setBuffer(SHADER, BUFFER_NAME, BUFFER_OBJECT) { console.error(`"setBuffer" not defined in module ${this.TYPE}!`) }
+    setBufferRaw(SHADER, BUFFER_NAME, RAW_DATA) { console.error(`"setBufferRaw" not defined in module ${this.TYPE}!`) }
+
+    drawFromBuffers(SHADER, POINT_COUNT, RENDER_TYPE) {}
 
     dispose() { delete this; }
 
@@ -102,12 +111,13 @@ DaveShade.module = class {
     }
 }
 
-//Define basic shader class
+//Define data holding classes
 DaveShade.shader = class {
     VERTEX = {};
     FRAGMENT = {};
     PROGRAM = null;
     PARENT_MODULE = null;
+    USING_INDICES = null;
     
     UNIFORM_INDICIES = [];
     ACTIVE_UNIFORMS = {};
@@ -123,6 +133,79 @@ DaveShade.shader = class {
 
     use() {
         this.PARENT_MODULE.useProgram(this.PROGRAM);
+    }
+
+    setUniforms(UNIFORM_JSON) {
+        //Make sure we are using the program, to my knowledge this is needed for GL-likes
+        this.PARENT_MODULE.useProgram(this.PROGRAM);
+
+        //Loop through keys
+        for (let key in UNIFORM_JSON) {
+            if (!this.uniforms[key]) continue;
+            
+            this.PARENT_MODULE.setUniform(this, key, UNIFORM_JSON[key], true);
+        }
+
+        //Return this so that we can easily use it again.
+        return UNIFORM_JSON;
+    }
+
+    setUniform(UNIFORM, VALUE) {
+        this.PARENT_MODULE.useProgram(this.PROGRAM);
+        this.PARENT_MODULE.setUniform(this, UNIFORM, VALUE, true);
+    }
+
+    setBuffers(BUFFER_OBJECT) {
+        //Just in-case
+        if (!(BUFFER_OBJECT instanceof DaveShade.attributeSet)) {
+            this.setBufferRaw(BUFFER_OBJECT);
+            return;
+        }
+
+        for (let key in BUFFER_OBJECT.ATTRIBUTES) {
+            if (!this.ATTRIBUTES[key]) continue;
+
+            this.PARENT_MODULE.setBuffer(this, key, BUFFER_OBJECT.ATTRIBUTES[key]);
+        }
+    }
+
+    setBufferRaw(RAW_DATA) {
+        for (let key in RAW_DATA) {
+            if (!this.ATTRIBUTES[key]) continue;
+            
+            this.PARENT_MODULE.setBufferRaw(this, key, RAW_DATA[key]);
+        }
+    }
+
+    drawFromBuffers(POINT_COUNT, RENDER_TYPE) {
+        this.PARENT_MODULE.drawFromBuffers(this, POINT_COUNT, RENDER_TYPE);
+    }
+}
+
+DaveShade.attributeSet = class {
+    //Simple one-liner.
+    ATTRIBUTES = {};
+    PARENT_MODULE = null;
+
+    dispose() { for (const key in ATTRIBUTES) { this.PARENT_MODULE.disposeBuffer(this.ATTRIBUTES[key]); } }
+}
+
+DaveShade.framebuffer = class {
+    ATTACHMENTS = [];
+    DRAW_BUFFERS = [];
+    
+    WIDTH = 0;
+    HEIGHT = 0;
+
+    COLOR_ATTACHMENTS = 0;
+    PARENT_MODULE = null;
+
+    use() { this.PARENT_MODULE.resizeFramebuffer(this); }
+    dispose() { this.PARENT_MODULE.resizeFramebuffer(this); }
+    resize(WIDTH, HEIGHT) { this.PARENT_MODULE.resizeFramebuffer(this, WIDTH, HEIGHT); }
+
+    constructor(FBO) {
+        this.FBO = FBO;
     }
 }
 
@@ -157,15 +240,10 @@ DaveShade.webGLModule = class extends DaveShade.module {
                         location: location,
                         type: uniformInfo.type,
                         isArray: isArray,
-                        "#value": null,
+                        "_value": null,
 
-                        set value(value) {
-                            this.GL.useProgram(SHADER.PROGRAM);
-                            SHADER.UNIFORMS[uniformName]["#value"] = value;
-                            this.setters[uniformInfo.type](location, value, uniformInfo);
-                        },
-
-                        get value() { return SHADER.UNIFORMS[uniformName]["#value"]; },
+                        set value(value) { this.setUniform(SHADER, uniformName, value); },
+                        get value() { return SHADER.UNIFORMS[uniformName]["_value"]; },
                     });
                 }
             } else {
@@ -175,15 +253,10 @@ DaveShade.webGLModule = class extends DaveShade.module {
                     location: location,
                     type: uniformInfo.type,
                     isArray: isArray,
-                    "#value": null,
+                    "_value": null,
 
-                    set value(value) {
-                        this.GL.useProgram(SHADER.PROGRAM);
-                        SHADER.UNIFORMS[uniformName]["#value"] = value;
-                        this.SETTERS[uniformInfo.type](location, value, uniformInfo);
-                    },
-
-                    get value() { return SHADER.UNIFORMS[uniformName]["#value"]; },
+                    set value(value) { this.setUniform(SHADER, uniformName, value); },
+                    get value() { return SHADER.UNIFORMS[uniformName]["_value"]; },
                 };
             }
 
@@ -261,22 +334,6 @@ DaveShade.webGLModule = class extends DaveShade.module {
 
             this.GL.vertexAttribPointer(location, divisions, this.GL.FLOAT, false, 0, 0);
         });
-
-        //* The buffer setter! the Legacy ONE!
-        SHADER.setBuffersRaw = (attributeJSON) => {
-            //? Loop through the keys
-            SHADER.usingIndices = false;
-            for (let key in attributeJSON) {
-                //* if it exists set the attribute
-                if (key == DaveShade.IndiceIdent) {
-                    //Do nothing
-                    continue;
-                }
-                if (SHADER.ATTRIBUTES[key]) {
-                    SHADER.ATTRIBUTES[key].setRaw(attributeJSON[key]);
-                }
-            }
-        };
     }
 
     createShader(VERTEX, FRAGMENT) {
@@ -364,6 +421,14 @@ DaveShade.webGLModule = class extends DaveShade.module {
         this.GL.useProgram(PROGRAM);
     }
 
+    setUniform(SHADER, UNIFORM, VALUE, NO_SET_PROGRAM) {
+        if (!NO_SET_PROGRAM) this.useProgram(SHADER.PROGRAM);
+        const uniformInfo = SHADER.UNIFORMS[UNIFORM];
+
+        uniformInfo["_value"] = VALUE;
+        this.SETTERS[uniformInfo.type](uniformInfo.location, VALUE, uniformInfo)
+    }
+
     useZBuffer(FUNC) {
         //Classic "BOOL"
         switch (typeof FUNC) {
@@ -393,6 +458,173 @@ DaveShade.webGLModule = class extends DaveShade.module {
             this.GL.enable(this.GL.CULL_FACE);
             this.GL.cullFace(SIDE);
         }
+    }
+
+    renderToCanvas() {
+        this.GL.bindFramebuffer(GL.FRAMEBUFFER, null);
+        if (daveShadeInstance.GL_VERSION == 2) this.GL.drawBuffers([this.GL.BACK]);
+        this.GL.viewport(0, 0, this.CANVAS.width, this.CANVAS.height);
+    }
+
+    _attachColorBuffer() {
+
+    }
+
+    createFramebuffer(WIDTH, HEIGHT, ATTACHMENTS) {
+        //Create and bind the framebuffer
+        const framebuffer = new DaveShade.framebuffer(this.GL.createFramebuffer());
+        this.GL.bindFramebuffer(GL.FRAMEBUFFER, FRAMEBUFFER.FBO);
+
+        //Set some wanted values
+        framebuffer.WIDTH = WIDTH;
+        framebuffer.HEIGHT = HEIGHT;
+
+        //Add the attachements
+        for (let attID in ATTACHMENTS) {
+            framebuffer.ATTACHMENTS.push(ATTACHMENTS[attID](framebuffer));
+        }
+
+        for (let drawBufferID = 0; drawBufferID < framebuffer.colorAttachments; drawBufferID++) {
+            //framebuffer.drawBuffers.push(GL.NONE);
+            framebuffer.drawBuffers.push(daveShadeInstance.DRAWBUFFER_MANAGER ? daveShadeInstance.DRAWBUFFER_MANAGER[`COLOR_ATTACHMENT${drawBufferID}`] : GL[`COLOR_ATTACHMENT${drawBufferID}`]);
+        }
+
+        this.FRAMEBUFFERS.push(framebuffer);
+        return framebuffer;
+    }
+
+    _quickColorBuffer(INTERNAL_FORMAT, FORMAT, TYPE) {
+        return (FRAMEBUFFER) => {
+            //Make sure our next buffer is even possible!
+            if (this.GL_VERSION == 1 && !this.DRAWBUFFER_MANAGER && FRAMEBUFFER.COLOR_ATTACHMENTS > 0) {
+                console.error("Cannot have multiple draw buffers! There will be graphical glitches!");
+                return { resize: () => {} };
+            }
+
+            //define our info
+            const renderBufferInfo = {
+                texture: this.GL.createTexture(),
+                resize: (width, height) => {
+                    renderBufferInfo.width = width;
+                    renderBufferInfo.height = height;
+                    this.GL.bindTexture(GL.TEXTURE_2D, renderBufferInfo.texture);
+                    this.GL.texImage2D(GL.TEXTURE_2D, 0, INTERNAL_FORMAT, width, height, 0, FORMAT, TYPE, null);
+                },
+                dispose: () => {
+                    this.GL.deleteTexture(renderBufferInfo.texture);
+                },
+            };
+
+            //Size up the render buffer's texture
+            renderBufferInfo.resize(FRAMEBUFFER.width, FRAMEBUFFER.height);
+            this.GL.texParameteri(this.GL.TEXTURE_2D, this.GL.TEXTURE_MIN_FILTER, this.GL.NEAREST);
+            this.GL.texParameteri(this.GL.TEXTURE_2D, this.GL.TEXTURE_MAG_FILTER, this.GL.NEAREST);
+
+            //Get our color attachment
+            const attachedBuffer = this.DRAWBUFFER_MANAGER ? this.DRAWBUFFER_MANAGER[`COLOR_ATTACHMENT${FRAMEBUFFER.colorAttachments}`] : GL[`COLOR_ATTACHMENT${FRAMEBUFFER.colorAttachments}`];
+            this.GL.framebufferTexture2D(this.GL.FRAMEBUFFER, attachedBuffer, GL.TEXTURE_2D, renderBufferInfo.texture, 0);
+
+            //Increment color attachments
+            FRAMEBUFFER.colorAttachments++;
+
+            return renderBufferInfo;
+        }
+    }
+
+    useFramebuffer(FRAMEBUFFER) { 
+        this.GL.bindFramebuffer(GL.FRAMEBUFFER, FRAMEBUFFER.FBO);
+        //Make sure to use our attachments
+        if (daveShadeInstance.GL_VERSION == 2) GL.drawBuffers(FRAMEBUFFER.DRAW_BUFFERS);
+        GL.viewport(0, 0, FRAMEBUFFER.WIDTH, FRAMEBUFFER.HEIGHT);
+    }
+
+    disposeFramebuffer(FRAMEBUFFER) {
+        FRAMEBUFFER.ATTACHMENTS.forEach((ATTACHMENT) => {
+            ATTACHMENT.dispose();
+        });
+
+        this.GL.deleteFramebuffer(FRAMEBUFFER.FBO);
+
+        if (this.FRAMEBUFFERS.includes(FRAMEBUFFER)) {
+            this.FRAMEBUFFERS.splice(this.FRAMEBUFFERS.indexOf(FRAMEBUFFER), 1);
+        }
+    }
+
+    resizeFramebuffer(FRAMEBUFFER, WIDTH, HEIGHT) { console.error(`"disposeFramebuffer" not defined in module ${this.TYPE}!`) }
+
+    createTexture(DATA, WIDTH, HEIGHT) { console.error(`"createTexture" not defined in module ${this.TYPE}!`) }
+    createTextureCube() { console.error(`"createTextureCube" not defined in module ${this.TYPE}!`) }
+    createTexture3D() { console.error(`"createTexture3D" not defined in module ${this.TYPE}!`) }
+
+    buffersFromJSON(ATTRIBUTE_JSON) {
+        const returned = new DaveShade.attributeSet();
+        returned.PARENT_MODULE = this;
+
+        for (const key in ATTRIBUTE_JSON) {
+            //Increment our ID
+            this._BUFFER_ID++;
+
+            let element = ATTRIBUTE_JSON[key];
+            const buffer = this.GL.createBuffer();
+            buffer.bufferID = this._BUFFER_ID;
+
+            //If we have indicies use indicies
+            if (key == DaveShade.IndiceIdent) {
+                //Convert if we just have a base array
+                if (Array.isArray(element)) element = new Int32Array(element.flat(4));
+
+                this.GL.bindBuffer(this.GL.ELEMENT_ARRAY_BUFFER, buffer);
+                this.GL.bufferData(this.GL.ELEMENT_ARRAY_BUFFER, element, this.GL.STATIC_DRAW);
+            }
+            else {
+                //Convert if we just have a base array
+                if (Array.isArray(element)) element = new Float32Array(element.flat(4));
+
+                this.GL.bindBuffer(this.GL.ARRAY_BUFFER, buffer);
+                this.GL.bufferData(this.GL.ARRAY_BUFFER, element, this.GL.STATIC_DRAW);
+            }
+
+            //Set the key in the buffer
+            returned.ATTRIBUTES[key] = buffer;
+        }
+
+        this.BUFFERS.push(returned);
+        return returned;
+    }
+
+    disposeBuffer(BUFFER) { this.GL.deleteBuffer(BUFFER); }
+
+    setBuffer(SHADER, BUFFER_NAME, BUFFER_OBJECT) {
+        //Grab relevant info
+        const attributeInfo = SHADER.ATTRIBUTES[BUFFER_NAME];
+
+        //Update info if needed
+        if (this.ATTRIBUTE_BINDINGS[attributeInfo.location] == BUFFER_OBJECT.bufferID) return;
+        this.ATTRIBUTE_BINDINGS[attributeInfo.location] = BUFFER_OBJECT.bufferID;
+        this.GL.bindBuffer(this.GL.ARRAY_BUFFER, BUFFER_OBJECT);
+        this.GL.vertexAttribPointer(attributeInfo.location, attributeInfo.divisions, this.GL.FLOAT, false, 0, 0);
+    }
+
+    setBufferRaw(SHADER, BUFFER_NAME, RAW_DATA) {
+        //Grab relevant info
+        const attributeInfo = SHADER.ATTRIBUTES[BUFFER_NAME];
+
+        this.ATTRIBUTE_BINDINGS[attributeInfo.location] = 0;
+        this.GL.bindBuffer(this.GL.ARRAY_BUFFER, attributeInfo.buffer);
+        this.GL.bufferData(this.GL.ARRAY_BUFFER, RAW_DATA, this.GL.STATIC_DRAW);
+        this.GL.vertexAttribPointer(attributeInfo.location, attributeInfo.divisions, this.GL.FLOAT, false, 0, 0);
+    }
+
+    drawFromBuffers(SHADER, POINT_COUNT, RENDER_TYPE) {
+        //Make sure we are using the shader
+        SHADER.use();
+
+        //Draw using indicies if we are using indicies
+        if (!this.USING_INDICIES) this.GL.drawArrays(RENDER_TYPE || this.GL.TRIANGLES, 0, POINT_COUNT);
+        else this.GL.drawElements(RENDER_TYPE || this.GL.TRIANGLES, POINT_COUNT, this.GL.UNSIGNED_INT, 0);
+
+        //Increment drawn tri count
+        this.POINT_COUNT += POINT_COUNT / 3;
     }
 
     clear(TARGET) {
@@ -484,6 +716,47 @@ DaveShade.webGLModule = class extends DaveShade.module {
             this.GL.bindTexture(this.GL.TEXTURE_3D, VALUE);
             this.GL.uniform1i(LOCATION, UNIFORM_INFO.SAMPLER_ID);
         }
+
+        //Render types
+        this.RENDER_TYPE.POINTS = this.GL.POINTS;
+        this.RENDER_TYPE.LINE_STRIP = this.GL.LINE_STRIP;
+        this.RENDER_TYPE.LINE_LOOP = this.GL.LINE_LOOP;
+        this.RENDER_TYPE.LINES = this.GL.LINES;
+        this.RENDER_TYPE.TRIANGLE_STRIP = this.GL.TRIANGLE_STRIP;
+        this.RENDER_TYPE.TRIANGLE_FAN = this.GL.TRIANGLE_FAN;
+        this.RENDER_TYPE.TRIANGLES = this.GL.TRIANGLES;
+
+        //Renderbuffer types
+        this.RENDERBUFFER_TYPE.TEXTURE_RGB = this._quickColorBuffer(this.GL.RGB, this.GL.RGB, this.GL.UNSIGNED_BYTE);
+        this.RENDERBUFFER_TYPE.TEXTURE_RGBA = this._quickColorBuffer(this.GL.RGBA, this.GL.RGBA, this.GL.UNSIGNED_BYTE);
+        if (this.GL_VERSION != 1) {
+            this.RENDERBUFFER_TYPE.TEXTURE_RGBA_FLOAT = this._quickColorBuffer(this.GL.RGBA16F, this.GL.RGBA, this.GL.FLOAT);
+            this.RENDERBUFFER_TYPE.TEXTURE_R = this._quickColorBuffer(this.GL.R8, this.GL.RED, this.GL.UNSIGNED_BYTE);
+            this.RENDERBUFFER_TYPE.TEXTURE_R_FLOAT = this._quickColorBuffer(this.GL.R16F, this.GL.RED, this.GL.FLOAT);
+        }
+        
+        //This one is a wee bit more complex
+        this.RENDERBUFFER_TYPE.DEPTH = (FRAMEBUFFER) => {
+            //define our info
+            const renderBufferInfo = {
+                renderBuffer: this.GL.createRenderbuffer(),
+                resize: (width, height) => {
+                    renderBufferInfo.width = width;
+                    renderBufferInfo.height = height;
+                    this.GL.bindRenderbuffer(this.GL.RENDERBUFFER, renderBufferInfo.renderBuffer);
+                    this.GL.renderbufferStorage(this.GL.RENDERBUFFER, this.GL.DEPTH_COMPONENT16, width, height);
+                },
+                dispose: () => {
+                    this.GL.deleteRenderbuffer(renderBufferInfo.renderBuffer);
+                },
+            };
+
+            //Resize and attach our buffer
+            renderBufferInfo.resize(FRAMEBUFFER.width, FRAMEBUFFER.height);
+            this.GL.framebufferRenderbuffer(this.GL.FRAMEBUFFER, this.GL.DEPTH_ATTACHMENT, this.GL.RENDERBUFFER, renderBufferInfo.renderBuffer);
+
+            return renderBufferInfo;
+        };
     }
 
     supported() { return (window.WebGLRenderingContext !== undefined); }
