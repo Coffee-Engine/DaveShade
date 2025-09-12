@@ -104,6 +104,7 @@ DaveShade.module = class {
         }
 
         SETTINGS = SETTINGS || {};
+        this.CANVAS = CANVAS;
 
         //These are seperated for cleanliness
         this.setup(CANVAS, SETTINGS);
@@ -461,19 +462,15 @@ DaveShade.webGLModule = class extends DaveShade.module {
     }
 
     renderToCanvas() {
-        this.GL.bindFramebuffer(GL.FRAMEBUFFER, null);
-        if (daveShadeInstance.GL_VERSION == 2) this.GL.drawBuffers([this.GL.BACK]);
+        this.GL.bindFramebuffer(this.GL.FRAMEBUFFER, null);
+        if (this.GL_VERSION == 2) this.GL.drawBuffers([this.GL.BACK]);
         this.GL.viewport(0, 0, this.CANVAS.width, this.CANVAS.height);
-    }
-
-    _attachColorBuffer() {
-
     }
 
     createFramebuffer(WIDTH, HEIGHT, ATTACHMENTS) {
         //Create and bind the framebuffer
         const framebuffer = new DaveShade.framebuffer(this.GL.createFramebuffer());
-        this.GL.bindFramebuffer(GL.FRAMEBUFFER, FRAMEBUFFER.FBO);
+        this.GL.bindFramebuffer(this.GL.FRAMEBUFFER, framebuffer.FBO);
 
         //Set some wanted values
         framebuffer.WIDTH = WIDTH;
@@ -484,9 +481,9 @@ DaveShade.webGLModule = class extends DaveShade.module {
             framebuffer.ATTACHMENTS.push(ATTACHMENTS[attID](framebuffer));
         }
 
-        for (let drawBufferID = 0; drawBufferID < framebuffer.colorAttachments; drawBufferID++) {
+        for (let drawBufferID = 0; drawBufferID < framebuffer.COLOR_ATTACHMENTS; drawBufferID++) {
             //framebuffer.drawBuffers.push(GL.NONE);
-            framebuffer.drawBuffers.push(daveShadeInstance.DRAWBUFFER_MANAGER ? daveShadeInstance.DRAWBUFFER_MANAGER[`COLOR_ATTACHMENT${drawBufferID}`] : GL[`COLOR_ATTACHMENT${drawBufferID}`]);
+            framebuffer.DRAW_BUFFERS.push(this.DRAWBUFFER_MANAGER ? this.DRAWBUFFER_MANAGER[`COLOR_ATTACHMENT${drawBufferID}`] : GL[`COLOR_ATTACHMENT${drawBufferID}`]);
         }
 
         this.FRAMEBUFFERS.push(framebuffer);
@@ -507,8 +504,8 @@ DaveShade.webGLModule = class extends DaveShade.module {
                 resize: (width, height) => {
                     renderBufferInfo.width = width;
                     renderBufferInfo.height = height;
-                    this.GL.bindTexture(GL.TEXTURE_2D, renderBufferInfo.texture);
-                    this.GL.texImage2D(GL.TEXTURE_2D, 0, INTERNAL_FORMAT, width, height, 0, FORMAT, TYPE, null);
+                    this.GL.bindTexture(this.GL.TEXTURE_2D, renderBufferInfo.texture);
+                    this.GL.texImage2D(this.GL.TEXTURE_2D, 0, INTERNAL_FORMAT, width, height, 0, FORMAT, TYPE, null);
                 },
                 dispose: () => {
                     this.GL.deleteTexture(renderBufferInfo.texture);
@@ -521,8 +518,8 @@ DaveShade.webGLModule = class extends DaveShade.module {
             this.GL.texParameteri(this.GL.TEXTURE_2D, this.GL.TEXTURE_MAG_FILTER, this.GL.NEAREST);
 
             //Get our color attachment
-            const attachedBuffer = this.DRAWBUFFER_MANAGER ? this.DRAWBUFFER_MANAGER[`COLOR_ATTACHMENT${FRAMEBUFFER.colorAttachments}`] : GL[`COLOR_ATTACHMENT${FRAMEBUFFER.colorAttachments}`];
-            this.GL.framebufferTexture2D(this.GL.FRAMEBUFFER, attachedBuffer, GL.TEXTURE_2D, renderBufferInfo.texture, 0);
+            const attachedBuffer = this.DRAWBUFFER_MANAGER ? this.DRAWBUFFER_MANAGER[`COLOR_ATTACHMENT${FRAMEBUFFER.COLOR_ATTACHMENTS}`] : this.GL[`COLOR_ATTACHMENT${FRAMEBUFFER.COLOR_ATTACHMENTS}`];
+            this.GL.framebufferTexture2D(this.GL.FRAMEBUFFER, attachedBuffer, this.GL.TEXTURE_2D, renderBufferInfo.texture, 0);
 
             //Increment color attachments
             FRAMEBUFFER.colorAttachments++;
@@ -532,10 +529,10 @@ DaveShade.webGLModule = class extends DaveShade.module {
     }
 
     useFramebuffer(FRAMEBUFFER) { 
-        this.GL.bindFramebuffer(GL.FRAMEBUFFER, FRAMEBUFFER.FBO);
+        this.GL.bindFramebuffer(this.GL.FRAMEBUFFER, FRAMEBUFFER.FBO);
         //Make sure to use our attachments
-        if (daveShadeInstance.GL_VERSION == 2) GL.drawBuffers(FRAMEBUFFER.DRAW_BUFFERS);
-        GL.viewport(0, 0, FRAMEBUFFER.WIDTH, FRAMEBUFFER.HEIGHT);
+        if (this.GL_VERSION == 2) this.GL.drawBuffers(FRAMEBUFFER.DRAW_BUFFERS);
+        this.GL.viewport(0, 0, FRAMEBUFFER.WIDTH, FRAMEBUFFER.HEIGHT);
     }
 
     disposeFramebuffer(FRAMEBUFFER) {
@@ -550,7 +547,14 @@ DaveShade.webGLModule = class extends DaveShade.module {
         }
     }
 
-    resizeFramebuffer(FRAMEBUFFER, WIDTH, HEIGHT) { console.error(`"disposeFramebuffer" not defined in module ${this.TYPE}!`) }
+    resizeFramebuffer(FRAMEBUFFER, WIDTH, HEIGHT) {
+        FRAMEBUFFER.ATTACHMENTS.forEach((ATTACHMENT) => {
+            ATTACHMENT.resize(WIDTH, HEIGHT);
+        });
+
+        FRAMEBUFFER.WIDTH = WIDTH;
+        FRAMEBUFFER.HEIGHT = HEIGHT;
+    }
 
     createTexture(DATA, WIDTH, HEIGHT) { console.error(`"createTexture" not defined in module ${this.TYPE}!`) }
     createTextureCube() { console.error(`"createTextureCube" not defined in module ${this.TYPE}!`) }
@@ -624,7 +628,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
         else this.GL.drawElements(RENDER_TYPE || this.GL.TRIANGLES, POINT_COUNT, this.GL.UNSIGNED_INT, 0);
 
         //Increment drawn tri count
-        this.POINT_COUNT += POINT_COUNT / 3;
+        this.POINT_COUNT += POINT_COUNT;
     }
 
     clear(TARGET) {
@@ -757,6 +761,81 @@ DaveShade.webGLModule = class extends DaveShade.module {
 
             return renderBufferInfo;
         };
+    }
+
+    setupTextureReader(CANVAS, SETTINGS) {
+        //? create stuff required to render these temporary textures
+        this.TEXTURE_READING_SHADER = this.createShader(`precision highp float;
+        attribute vec4 a_position;
+        attribute vec2 a_texcoord;
+
+        varying vec2 v_texCoord;
+        
+        void main() {
+            gl_Position = a_position;
+            v_texCoord = a_texcoord;
+        }
+        `,`precision highp float;
+        varying vec2 v_texCoord;
+
+        uniform sampler2D u_texture;
+        
+        void main() {
+            gl_FragColor = texture2D(u_texture, v_texCoord);
+        }
+        `);
+
+        //? Create the data for the quad
+        this.TEXTURE_READING_QUAD = this.buffersFromJSON({
+            a_position: new Float32Array(
+                [
+                    1,-1,0,1,
+                    -1,-1,0,1,
+                    1,1,0,1,
+
+                    -1,-1,0,1,
+                    -1,1,0,1,
+                    1,1,0,1
+                ]
+            ),
+            a_texcoord: new Float32Array(
+                [
+                    1,0,
+                    0,0,
+                    1,1,
+
+                    0,0,
+                    0,1,
+                    1,1
+                ]
+            )
+        });
+
+        this.TEXTURE_READING_BUFFER = this.createFramebuffer(1, 1, [this.RENDERBUFFER_TYPE.TEXTURE_RGBA]);
+
+        //? Make sure we are rendering to the canvas!!!
+        this.renderToCanvas();
+    }
+
+    
+    readTexture(TEXTURE, X, Y, W, H) {
+        //Resize the texture
+        this.TEXTURE_READING_BUFFER.resize(TEXTURE.WIDTH, TEXTURE.HEIGHT);
+        this.TEXTURE_READING_BUFFER.use();
+        
+        //Clear and draw
+        GL.clear(GL.COLOR_BUFFER_BIT);
+        this.TEXTURE_READING_SHADER.setUniform("u_texture", TEXTURE.TEXTURE);
+        this.TEXTURE_READING_SHADER.setBuffers(this.TEXTURE_READING_QUAD);
+        this.TEXTURE_READING_SHADER.drawFromBuffers(6);
+
+        //Then finally get the data
+        let output = new Uint8Array(4);
+        this.GL.readPixels(X, Y, W, H, this.GL.RGBA, this.GL.UNSIGNED_BYTE, output);
+        //scale it back down to hopefully save ram
+        this.TEXTURE_READING_BUFFER.resize(1,1);
+
+        return Array.from(output);
     }
 
     supported() { return (window.WebGLRenderingContext !== undefined); }
