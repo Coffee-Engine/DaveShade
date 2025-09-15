@@ -95,6 +95,8 @@ DaveShade.module = class {
 
     dispose() { delete this; }
 
+    viewport(X, Y, WIDTH, HEIGHT) { console.error(`"viewport" not defined in module ${this.TYPE}!`) }
+    resize(WIDTH, HEIGHT) { console.error(`"resize" not defined in module ${this.TYPE}!`) }
     clear(TARGET) { console.error(`"clear" not defined in module ${this.TYPE}!`) }
 
     setup(CANVAS, SETTINGS) { console.warn(`${this.TYPE} doesn't have a "setup" function. Does it exist?`) }
@@ -218,6 +220,7 @@ DaveShade.framebuffer = class {
 //Now for the base webGL module
 DaveShade.webGLModule = class extends DaveShade.module {
     GL_VERSION = 2;
+    IN_CANVAS = true;
 
     get SUPPORTED() { return (window.WebGLRenderingContext !== undefined); }
     get PRIORITY() { return 10; }
@@ -493,6 +496,9 @@ DaveShade.webGLModule = class extends DaveShade.module {
         this.GL.bindFramebuffer(this.GL.FRAMEBUFFER, null);
         if (this.GL_VERSION > 1) this.GL.drawBuffers([this.GL.BACK]);
         this.GL.viewport(0, 0, this.CANVAS.width, this.CANVAS.height);
+
+        //Update in canvas status
+        this.IN_CANVAS = true;
     }
 
     createFramebuffer(WIDTH, HEIGHT, ATTACHMENTS) {
@@ -514,7 +520,9 @@ DaveShade.webGLModule = class extends DaveShade.module {
             framebuffer.DRAW_BUFFERS.push(this.DRAWBUFFER_MANAGER ? this.DRAWBUFFER_MANAGER[`COLOR_ATTACHMENT${drawBufferID}`] : GL[`COLOR_ATTACHMENT${drawBufferID}`]);
         }
 
+        //Push it, use it, return it
         this.FRAMEBUFFERS.push(framebuffer);
+        this.useFramebuffer(framebuffer);
         return framebuffer;
     }
 
@@ -561,6 +569,9 @@ DaveShade.webGLModule = class extends DaveShade.module {
         //Make sure to use our attachments
         if (this.GL_VERSION > 1) this.GL.drawBuffers(FRAMEBUFFER.DRAW_BUFFERS);
         this.GL.viewport(0, 0, FRAMEBUFFER.WIDTH, FRAMEBUFFER.HEIGHT);
+
+        //Update in canvas status
+        this.IN_CANVAS = false;
     }
 
     disposeFramebuffer(FRAMEBUFFER) {
@@ -657,6 +668,20 @@ DaveShade.webGLModule = class extends DaveShade.module {
 
         //Increment drawn tri count
         this.POINT_COUNT += POINT_COUNT;
+    }
+
+
+    resize(WIDTH, HEIGHT) {
+        this.CANVAS.width = WIDTH;
+        this.CANVAS.height = HEIGHT;
+
+        if (this.IN_CANVAS) {
+            this.viewport(0, 0, WIDTH, HEIGHT);
+        }
+    }
+
+    viewport(X, Y, WIDTH, HEIGHT) {
+        this.GL.viewport(X, Y, WIDTH, HEIGHT);
     }
 
     clear(TARGET) {
