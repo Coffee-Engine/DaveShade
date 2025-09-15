@@ -233,27 +233,19 @@ DaveShade.framebuffer = class {
 //Texture class, with compatibility things
 DaveShade.texture = class {
     TEXTURE = null;
-    get texture() {
-        return this.TEXTURE;
-    }
+    get texture() { return this.TEXTURE; }
 
     TYPE = "TEXTURE2D";
     CURRENT_FILTER = 0;
 
     WIDTH = 0;
-    get width() {
-        return this.WIDTH;
-    }
+    get width() { return this.WIDTH; }
 
     HEIGHT = 0;
-    get height() {
-        return this.HEIGHT;
-    }
+    get height() { return this.HEIGHT; }
 
     DEPTH = 0;
-    get depth() {
-        return this.DEPTH;
-    }
+    get depth() { return this.DEPTH; }
 
     PARENT_MODULE = null;
 
