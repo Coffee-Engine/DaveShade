@@ -216,10 +216,10 @@ DaveShade.framebuffer = class {
     PARENT_MODULE = null;
 
     use() {
-        this.PARENT_MODULE.resizeFramebuffer(this);
+        this.PARENT_MODULE.useFramebuffer(this);
     }
     dispose() {
-        this.PARENT_MODULE.resizeFramebuffer(this);
+        this.PARENT_MODULE.disposeFramebuffer(this);
     }
     resize(WIDTH, HEIGHT) {
         this.PARENT_MODULE.resizeFramebuffer(this, WIDTH, HEIGHT);
@@ -280,16 +280,32 @@ DaveShade.webGLModule = class extends DaveShade.module {
             const uniformName = uniformInfo.name.split("[")[0];
             const isArray = uniformInfo.name.includes("[");
 
+            //For when "this" becomes invalid, AKA through the console
+            const module = this;
+
             //differentiate arrays and
             if (isArray) {
                 const arrayLength = uniformInfo.size;
-                SHADER.uniforms[uniformName] = [];
+                SHADER.UNIFORMS[uniformName] = [];
 
                 for (let index = 0; index < arrayLength; index++) {
                     const location = this.GL.getUniformLocation(SHADER.PROGRAM, `${uniformName}[${index}]`);
-                    const module = this;
 
-                    SHADER.uniforms[uniformName].push({
+                    SHADER.UNIFORMS[uniformName].push({
+                        location: location,
+                        type: uniformInfo.type,
+                        isArray: isArray,
+                        _value: null,
+
+                        set value(value) {
+                            module.setUniform(SHADER, `${uniformName}[${index}]`, value);
+                        },
+                        get value() {
+                            return SHADER.UNIFORMS[`${uniformName}[${index}]`]["_value"];
+                        },
+                    });
+
+                    SHADER.UNIFORMS[`${uniformName}[${index}]`] = {
                         location: location,
                         type: uniformInfo.type,
                         isArray: isArray,
@@ -301,7 +317,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
                         get value() {
                             return SHADER.UNIFORMS[uniformName]["_value"];
                         },
-                    });
+                    };
                 }
             } else {
                 const location = this.GL.getUniformLocation(SHADER.PROGRAM,uniformName);
@@ -313,7 +329,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
                     _value: null,
 
                     set value(value) {
-                        this.setUniform(SHADER, uniformName, value);
+                        module.setUniform(SHADER, uniformName, value);
                     },
                     get value() {
                         return SHADER.UNIFORMS[uniformName]["_value"];
@@ -504,8 +520,19 @@ DaveShade.webGLModule = class extends DaveShade.module {
     useProgram(PROGRAM) { this.GL.useProgram(PROGRAM); }
 
     setUniform(SHADER, UNIFORM, VALUE, NO_SET_PROGRAM) {
-        if (!NO_SET_PROGRAM) this.useProgram(SHADER.PROGRAM);
         const uniformInfo = SHADER.UNIFORMS[UNIFORM];
+        if (Array.isArray(uniformInfo)) {
+            //Loop through values
+            for (let item in VALUE) {
+                if (!uniformInfo[item]) break;
+
+                uniformInfo[item].value = item;
+            }
+
+            return;
+        }
+
+        if (!NO_SET_PROGRAM) this.useProgram(SHADER.PROGRAM);
 
         uniformInfo["_value"] = VALUE;
         this.SETTERS[uniformInfo.type](uniformInfo.location, VALUE, uniformInfo);
@@ -572,7 +599,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
             //framebuffer.drawBuffers.push(this.GL.NONE);
             framebuffer.DRAW_BUFFERS.push(this.DRAWBUFFER_MANAGER
                     ? this.DRAWBUFFER_MANAGER[`COLOR_ATTACHMENT${drawBufferID}`]
-                    : GL[`COLOR_ATTACHMENT${drawBufferID}`]);
+                    : this.GL[`COLOR_ATTACHMENT${drawBufferID}`]);
         }
 
         //Push it, use it, return it
@@ -615,7 +642,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
             this.GL.framebufferTexture2D(this.GL.FRAMEBUFFER,attachedBuffer,this.GL.TEXTURE_2D,renderBufferInfo.texture,0);
 
             //Increment color attachments
-            FRAMEBUFFER.colorAttachments++;
+            FRAMEBUFFER.COLOR_ATTACHMENTS++;
 
             return renderBufferInfo;
         };
