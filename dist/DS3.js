@@ -27,7 +27,7 @@
 window.DaveShade = {
     MODULES: [],
     INDICE_IDENTIFIER: "__INDICIES__",
-    VERSION: "3.1"
+    VERSION: "3.1",
 };
 
 //Module Creation
@@ -82,7 +82,7 @@ DaveShade.module = class {
     disposeFramebuffer(FRAMEBUFFER) { console.error(`"disposeFramebuffer" not defined in module ${this.TYPE}!`) }
     resizeFramebuffer(FRAMEBUFFER, WIDTH, HEIGHT) { console.error(`"disposeFramebuffer" not defined in module ${this.TYPE}!`) }
 
-    createTexture() { console.error(`"createTexture" not defined in module ${this.TYPE}!`) }
+    createTexture(DATA, WIDTH, HEIGHT) { console.error(`"createTexture" not defined in module ${this.TYPE}!`) }
     createTextureCube() { console.error(`"createTextureCube" not defined in module ${this.TYPE}!`) }
     createTexture3D() { console.error(`"createTexture3D" not defined in module ${this.TYPE}!`) }
 
@@ -127,7 +127,7 @@ DaveShade.shader = class {
     PROGRAM = null;
     PARENT_MODULE = null;
     USING_INDICES = null;
-    
+
     UNIFORM_INDICIES = [];
     ACTIVE_UNIFORMS = {};
     UNIFORMS = {};
@@ -138,7 +138,9 @@ DaveShade.shader = class {
     TEXTURE_COUNT = 0;
 
     //Just compatibility
-    get uniforms() { return this.UNIFORMS; }
+    get uniforms() {
+        return this.UNIFORMS;
+    }
 
     use() {
         this.PARENT_MODULE.useProgram(this.PROGRAM);
@@ -151,7 +153,7 @@ DaveShade.shader = class {
         //Loop through keys
         for (let key in UNIFORM_JSON) {
             if (!this.uniforms[key]) continue;
-            
+
             this.PARENT_MODULE.setUniform(this, key, UNIFORM_JSON[key], true);
         }
 
@@ -174,14 +176,18 @@ DaveShade.shader = class {
         for (let key in BUFFER_OBJECT.ATTRIBUTES) {
             if (!this.ATTRIBUTES[key]) continue;
 
-            this.PARENT_MODULE.setBuffer(this, key, BUFFER_OBJECT.ATTRIBUTES[key]);
+            this.PARENT_MODULE.setBuffer(
+                this,
+                key,
+                BUFFER_OBJECT.ATTRIBUTES[key]
+            );
         }
     }
 
     setBufferRaw(RAW_DATA) {
         for (let key in RAW_DATA) {
             if (!this.ATTRIBUTES[key]) continue;
-            
+
             this.PARENT_MODULE.setBufferRaw(this, key, RAW_DATA[key]);
         }
     }
@@ -196,26 +202,66 @@ DaveShade.attributeSet = class {
     ATTRIBUTES = {};
     PARENT_MODULE = null;
 
-    dispose() { for (const key in ATTRIBUTES) { this.PARENT_MODULE.disposeBuffer(this.ATTRIBUTES[key]); } }
+    dispose() {
+        for (const key in ATTRIBUTES) {
+            this.PARENT_MODULE.disposeBuffer(this.ATTRIBUTES[key]);
+        }
+    }
 };
 
 DaveShade.framebuffer = class {
     ATTACHMENTS = [];
     DRAW_BUFFERS = [];
-    
+
     WIDTH = 0;
     HEIGHT = 0;
 
     COLOR_ATTACHMENTS = 0;
     PARENT_MODULE = null;
 
-    use() { this.PARENT_MODULE.resizeFramebuffer(this); }
-    dispose() { this.PARENT_MODULE.resizeFramebuffer(this); }
-    resize(WIDTH, HEIGHT) { this.PARENT_MODULE.resizeFramebuffer(this, WIDTH, HEIGHT); }
+    use() {
+        this.PARENT_MODULE.resizeFramebuffer(this);
+    }
+    dispose() {
+        this.PARENT_MODULE.resizeFramebuffer(this);
+    }
+    resize(WIDTH, HEIGHT) {
+        this.PARENT_MODULE.resizeFramebuffer(this, WIDTH, HEIGHT);
+    }
 
     constructor(FBO) {
         this.FBO = FBO;
     }
+};
+
+//Texture class, with compatibility things
+DaveShade.texture = class {
+    TEXTURE = null;
+    get texture() {
+        return this.TEXTURE;
+    }
+
+    TYPE = "TEXTURE2D";
+    CURRENT_FILTER = 0;
+
+    WIDTH = 0;
+    get width() {
+        return this.WIDTH;
+    }
+
+    HEIGHT = 0;
+    get height() {
+        return this.HEIGHT;
+    }
+
+    DEPTH = 0;
+    get depth() {
+        return this.DEPTH;
+    }
+
+    PARENT_MODULE = null;
+
+    setFiltering(NEW_FILTER, MINIMIZE) {}
 };
 
 //Now for the base webGL module
@@ -223,14 +269,28 @@ DaveShade.webGLModule = class extends DaveShade.module {
     GL_VERSION = 2;
     IN_CANVAS = true;
 
+    // prettier-ignore
     get SUPPORTED() { return (window.WebGLRenderingContext !== undefined); }
+    // prettier-ignore
     get PRIORITY() { return 10; }
+    // prettier-ignore
     get TYPE() { return "WEBGL";}
 
     _poachShaderUniforms(SHADER) {
         //* Grab the uniforms
-        SHADER.UNIFORM_INDICIES = [...Array(this.GL.getProgramParameter(SHADER.PROGRAM, this.GL.ACTIVE_UNIFORMS)).keys()];
-        SHADER.ACTIVE_UNIFORMS = this.GL.getActiveUniforms(SHADER.PROGRAM, SHADER.UNIFORM_INDICIES, this.GL.UNIFORM_TYPE);
+        SHADER.UNIFORM_INDICIES = [
+            ...Array(
+                this.GL.getProgramParameter(
+                    SHADER.PROGRAM,
+                    this.GL.ACTIVE_UNIFORMS
+                )
+            ).keys(),
+        ];
+        SHADER.ACTIVE_UNIFORMS = this.GL.getActiveUniforms(
+            SHADER.PROGRAM,
+            SHADER.UNIFORM_INDICIES,
+            this.GL.UNIFORM_TYPE
+        );
         SHADER.TEXTURE_COUNT = 0;
 
         //* use the program while we assign stuff
@@ -248,29 +308,43 @@ DaveShade.webGLModule = class extends DaveShade.module {
                 SHADER.uniforms[uniformName] = [];
 
                 for (let index = 0; index < arrayLength; index++) {
-                    const location = this.GL.getUniformLocation(SHADER.PROGRAM, `${uniformName}[${index}]`);
+                    const location = this.GL.getUniformLocation(
+                        SHADER.PROGRAM,
+                        `${uniformName}[${index}]`
+                    );
 
                     SHADER.uniforms[uniformName].push({
                         location: location,
                         type: uniformInfo.type,
                         isArray: isArray,
-                        "_value": null,
+                        _value: null,
 
-                        set value(value) { this.setUniform(SHADER, uniformName, value); },
-                        get value() { return SHADER.UNIFORMS[uniformName]["_value"]; },
+                        set value(value) {
+                            this.setUniform(SHADER, uniformName, value);
+                        },
+                        get value() {
+                            return SHADER.UNIFORMS[uniformName]["_value"];
+                        },
                     });
                 }
             } else {
-                const location = this.GL.getUniformLocation(SHADER.PROGRAM, uniformName);
+                const location = this.GL.getUniformLocation(
+                    SHADER.PROGRAM,
+                    uniformName
+                );
 
                 SHADER.UNIFORMS[uniformName] = {
                     location: location,
                     type: uniformInfo.type,
                     isArray: isArray,
-                    "_value": null,
+                    _value: null,
 
-                    set value(value) { this.setUniform(SHADER, uniformName, value); },
-                    get value() { return SHADER.UNIFORMS[uniformName]["_value"]; },
+                    set value(value) {
+                        this.setUniform(SHADER, uniformName, value);
+                    },
+                    get value() {
+                        return SHADER.UNIFORMS[uniformName]["_value"];
+                    },
                 };
             }
 
@@ -283,12 +357,22 @@ DaveShade.webGLModule = class extends DaveShade.module {
 
     _poachShaderAttributes(SHADER) {
         //* Grab the attributes
-        SHADER.ATTRIBUTE_INDICIES = [...Array(this.GL.getProgramParameter(SHADER.PROGRAM, this.GL.ACTIVE_ATTRIBUTES)).keys()];
+        SHADER.ATTRIBUTE_INDICIES = [
+            ...Array(
+                this.GL.getProgramParameter(
+                    SHADER.PROGRAM,
+                    this.GL.ACTIVE_ATTRIBUTES
+                )
+            ).keys(),
+        ];
 
         //* Loop through the attributes
         SHADER.ATTRIBUTE_INDICIES.forEach((attributeID) => {
             //* Lets split the attribute definition
-            const attributeDef = this.GL.getActiveAttrib(SHADER.PROGRAM, attributeID);
+            const attributeDef = this.GL.getActiveAttrib(
+                SHADER.PROGRAM,
+                attributeID
+            );
 
             //? could probably conglomerate better?
             SHADER.ATTRIBUTES[attributeDef.name] = {
@@ -296,13 +380,24 @@ DaveShade.webGLModule = class extends DaveShade.module {
             };
 
             //* Attribute Stuff
-            SHADER.ATTRIBUTES[attributeDef.name].location = this.GL.getAttribLocation(SHADER.PROGRAM, attributeDef.name);
-            this.GL.enableVertexAttribArray(SHADER.ATTRIBUTES[attributeDef.name].location);
+            SHADER.ATTRIBUTES[attributeDef.name].location =
+                this.GL.getAttribLocation(SHADER.PROGRAM, attributeDef.name);
+            this.GL.enableVertexAttribArray(
+                SHADER.ATTRIBUTES[attributeDef.name].location
+            );
 
             //* Create the buffer
-            SHADER.ATTRIBUTES[attributeDef.name].buffer = this.GL.createBuffer();
-            this.GL.bindBuffer(this.GL.ARRAY_BUFFER, SHADER.ATTRIBUTES[attributeDef.name].buffer);
-            this.GL.bufferData(this.GL.ARRAY_BUFFER, new Float32Array(65536), this.GL.STATIC_DRAW);
+            SHADER.ATTRIBUTES[attributeDef.name].buffer =
+                this.GL.createBuffer();
+            this.GL.bindBuffer(
+                this.GL.ARRAY_BUFFER,
+                SHADER.ATTRIBUTES[attributeDef.name].buffer
+            );
+            this.GL.bufferData(
+                this.GL.ARRAY_BUFFER,
+                new Float32Array(65536),
+                this.GL.STATIC_DRAW
+            );
 
             //* Assign values dependant on types
             switch (SHADER.ATTRIBUTES[attributeDef.name].type) {
@@ -326,16 +421,30 @@ DaveShade.webGLModule = class extends DaveShade.module {
                     SHADER.ATTRIBUTES[attributeDef.name].divisions = 1;
                     break;
             }
-            
+
             const location = SHADER.ATTRIBUTES[attributeDef.name].location;
             const divisions = SHADER.ATTRIBUTES[attributeDef.name].divisions;
 
             //* The setter legacy (DS2)
             SHADER.ATTRIBUTES[attributeDef.name].setRaw = (newValue) => {
                 this.oldAttributes[location] = 0;
-                this.GL.bindBuffer(this.GL.ARRAY_BUFFER, SHADER.ATTRIBUTES[attributeDef.name].buffer);
-                this.GL.bufferData(this.GL.ARRAY_BUFFER, newValue, this.GL.STATIC_DRAW);
-                this.GL.vertexAttribPointer(location, divisions, this.GL.FLOAT, false, 0, 0);
+                this.GL.bindBuffer(
+                    this.GL.ARRAY_BUFFER,
+                    SHADER.ATTRIBUTES[attributeDef.name].buffer
+                );
+                this.GL.bufferData(
+                    this.GL.ARRAY_BUFFER,
+                    newValue,
+                    this.GL.STATIC_DRAW
+                );
+                this.GL.vertexAttribPointer(
+                    location,
+                    divisions,
+                    this.GL.FLOAT,
+                    false,
+                    0,
+                    0
+                );
             };
 
             //* The setter
@@ -343,38 +452,66 @@ DaveShade.webGLModule = class extends DaveShade.module {
                 if (this.oldAttributes[location] == newValue.bufferID) return;
                 this.oldAttributes[location] = newValue.bufferID;
                 this.GL.bindBuffer(this.GL.ARRAY_BUFFER, newValue);
-                this.GL.vertexAttribPointer(location, divisions, this.GL.FLOAT, false, 0, 0);
+                this.GL.vertexAttribPointer(
+                    location,
+                    divisions,
+                    this.GL.FLOAT,
+                    false,
+                    0,
+                    0
+                );
             };
 
-            this.GL.vertexAttribPointer(location, divisions, this.GL.FLOAT, false, 0, 0);
+            this.GL.vertexAttribPointer(
+                location,
+                divisions,
+                this.GL.FLOAT,
+                false,
+                0,
+                0
+            );
         });
     }
 
     createShader(VERTEX, FRAGMENT) {
-        if ((!VERTEX) && (!FRAGMENT)) {
-            console.error("Missing VERTEX and FRAGMENT when making shader.")
+        if (!VERTEX && !FRAGMENT) {
+            console.error("Missing VERTEX and FRAGMENT when making shader.");
             return;
         }
 
         //Decompose if we where only given the first argument
         if (!FRAGMENT) {
-            const vertexFunction = DaveShade.findFunctionInGLSL(VERTEX, "vertex");
-            const fragmentFunction = DaveShade.findFunctionInGLSL(VERTEX, "fragment");
+            const vertexFunction = DaveShade.findFunctionInGLSL(
+                VERTEX,
+                "vertex"
+            );
+            const fragmentFunction = DaveShade.findFunctionInGLSL(
+                VERTEX,
+                "fragment"
+            );
 
-            if (!vertexFunction || !fragmentFunction) return {
-                status: this.COMPILE_STATUS.FAILURE,
-            };
+            if (!vertexFunction || !fragmentFunction)
+                return {
+                    status: this.COMPILE_STATUS.FAILURE,
+                };
 
             //Replace things that are required
-            FRAGMENT = VERTEX.replace(vertexFunction, "").replace(this.REGEX.ATTRIBUTE, "").replace(fragmentFunction.split("(")[0], "void main");
-            VERTEX = VERTEX.replace(fragmentFunction, "").replace(vertexFunction.split("(")[0], "void main");
+            FRAGMENT = VERTEX.replace(vertexFunction, "")
+                .replace(this.REGEX.ATTRIBUTE, "")
+                .replace(fragmentFunction.split("(")[0], "void main");
+            VERTEX = VERTEX.replace(fragmentFunction, "").replace(
+                vertexFunction.split("(")[0],
+                "void main"
+            );
         }
 
         //Create our shader and add it to the list
         const createdShader = new DaveShade.shader();
 
         //* Compile the vertex shader
-        createdShader.VERTEX.shader = this.GL.createShader(this.GL.VERTEX_SHADER);
+        createdShader.VERTEX.shader = this.GL.createShader(
+            this.GL.VERTEX_SHADER
+        );
         createdShader.VERTEX.src = VERTEX;
 
         //Set shader source first
@@ -382,8 +519,17 @@ DaveShade.webGLModule = class extends DaveShade.module {
         this.GL.compileShader(createdShader.VERTEX.shader);
 
         //? could potentially be better?
-        if (!this.GL.getShaderParameter(createdShader.VERTEX.shader, this.GL.COMPILE_STATUS)) {
-            console.error(`shader not compiled!\nclearing memory\nCompile Log\n***\n${this.GL.getShaderInfoLog(createdShader.VERTEX.shader)}\n***`);
+        if (
+            !this.GL.getShaderParameter(
+                createdShader.VERTEX.shader,
+                this.GL.COMPILE_STATUS
+            )
+        ) {
+            console.error(
+                `shader not compiled!\nclearing memory\nCompile Log\n***\n${this.GL.getShaderInfoLog(
+                    createdShader.VERTEX.shader
+                )}\n***`
+            );
             this.disposeShader(createdShader);
             return {
                 status: this.COMPILE_STATUS.FAILURE,
@@ -391,7 +537,9 @@ DaveShade.webGLModule = class extends DaveShade.module {
         }
 
         //* Compile the fragment shader
-        createdShader.FRAGMENT.shader = this.GL.createShader(this.GL.FRAGMENT_SHADER);
+        createdShader.FRAGMENT.shader = this.GL.createShader(
+            this.GL.FRAGMENT_SHADER
+        );
         createdShader.FRAGMENT.src = FRAGMENT;
 
         //Set shader source first
@@ -399,8 +547,17 @@ DaveShade.webGLModule = class extends DaveShade.module {
         this.GL.compileShader(createdShader.FRAGMENT.shader);
 
         //? could potentially be better?
-        if (!this.GL.getShaderParameter(createdShader.FRAGMENT.shader, this.GL.COMPILE_STATUS)) {
-            console.error(`shader not compiled!\nclearing memory\nCompile Log\n***\n${this.GL.getShaderInfoLog(createdShader.FRAGMENT.shader)}\n***`);
+        if (
+            !this.GL.getShaderParameter(
+                createdShader.FRAGMENT.shader,
+                this.GL.COMPILE_STATUS
+            )
+        ) {
+            console.error(
+                `shader not compiled!\nclearing memory\nCompile Log\n***\n${this.GL.getShaderInfoLog(
+                    createdShader.FRAGMENT.shader
+                )}\n***`
+            );
             this.clearShaderFromMemory(createdShader);
             return {
                 status: this.COMPILE_STATUS.FAILURE,
@@ -410,14 +567,29 @@ DaveShade.webGLModule = class extends DaveShade.module {
         //* Get in the oven frank
         createdShader.PROGRAM = this.GL.createProgram();
 
-        this.GL.attachShader(createdShader.PROGRAM, createdShader.VERTEX.shader);
-        this.GL.attachShader(createdShader.PROGRAM, createdShader.FRAGMENT.shader);
+        this.GL.attachShader(
+            createdShader.PROGRAM,
+            createdShader.VERTEX.shader
+        );
+        this.GL.attachShader(
+            createdShader.PROGRAM,
+            createdShader.FRAGMENT.shader
+        );
 
         this.GL.linkProgram(createdShader.PROGRAM);
 
         //? could potentially be better?
-        if (!this.GL.getProgramParameter(createdShader.PROGRAM, this.GL.LINK_STATUS)) {
-            console.error(`shader not compiled!\nerror in program linking!\nclearing memory\nlink log\n***\n${gl.getProgramInfoLog(createdShader.PROGRAM)}\n***`);
+        if (
+            !this.GL.getProgramParameter(
+                createdShader.PROGRAM,
+                this.GL.LINK_STATUS
+            )
+        ) {
+            console.error(
+                `shader not compiled!\nerror in program linking!\nclearing memory\nlink log\n***\n${gl.getProgramInfoLog(
+                    createdShader.PROGRAM
+                )}\n***`
+            );
             this.clearShaderFromMemory(createdShader);
             return {
                 status: this.COMPILE_STATUS.FAILURE,
@@ -431,7 +603,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
         this.SHADERS.push(createdShader);
         return createdShader;
     }
-    
+
     disposeShader(SHADER) {
         //*Remove the shader from the list
         if (this.SHADERS.includes(SHADER)) {
@@ -440,26 +612,29 @@ DaveShade.webGLModule = class extends DaveShade.module {
 
         //*Delete the program and shaders
         if (SHADER.PROGRAM) {
-           this.GL.deleteProgram(SHADER.PROGRAM);
+            this.GL.deleteProgram(SHADER.PROGRAM);
         }
         if (SHADER.VERTEX.shader) {
-           this.GL.deleteShader(SHADER.VERTEX.shader);
+            this.GL.deleteShader(SHADER.VERTEX.shader);
         }
         if (SHADER.FRAGMENT.shader) {
-           this.GL.deleteShader(SHADER.FRAGMENT.shader);
+            this.GL.deleteShader(SHADER.FRAGMENT.shader);
         }
     }
-    
-    useProgram(PROGRAM) {
-        this.GL.useProgram(PROGRAM);
-    }
+
+    // prettier-ignore
+    useProgram(PROGRAM) { this.GL.useProgram(PROGRAM); }
 
     setUniform(SHADER, UNIFORM, VALUE, NO_SET_PROGRAM) {
         if (!NO_SET_PROGRAM) this.useProgram(SHADER.PROGRAM);
         const uniformInfo = SHADER.UNIFORMS[UNIFORM];
 
         uniformInfo["_value"] = VALUE;
-        this.SETTERS[uniformInfo.type](uniformInfo.location, VALUE, uniformInfo)
+        this.SETTERS[uniformInfo.type](
+            uniformInfo.location,
+            VALUE,
+            uniformInfo
+        );
     }
 
     useZBuffer(FUNC) {
@@ -468,26 +643,28 @@ DaveShade.webGLModule = class extends DaveShade.module {
             case "boolean":
                 if (FUNC) this.GL.enable(this.GL.DEPTH_TEST);
                 else this.GL.disable(this.GL.DEPTH_TEST);
-                
-               this.GL.depthFunc(FUNC ? this.GL.LEQUAL : this.GL.NEVER);
+
+                this.GL.depthFunc(FUNC ? this.GL.LEQUAL : this.GL.NEVER);
                 break;
-            
+
             case "number":
-                if (FUNC == this.DEPTH_FUNC.NEVER) this.GL.disable(this.GL.DEPTH_TEST);
+                if (FUNC == this.DEPTH_FUNC.NEVER)
+                    this.GL.disable(this.GL.DEPTH_TEST);
                 else this.GL.enable(this.GL.DEPTH_TEST);
                 this.GL.depthFunc(FUNC);
                 break;
-        
+
             default:
                 break;
-        }        
+        }
     }
 
     cullFace(SIDE) {
         if (typeof SIDE != "number") return;
 
-        if (SIDE == 0) { this.GL.disable(this.GL.CULL_FACE); }
-        else {
+        if (SIDE == 0) {
+            this.GL.disable(this.GL.CULL_FACE);
+        } else {
             this.GL.enable(this.GL.CULL_FACE);
             this.GL.cullFace(SIDE);
         }
@@ -504,7 +681,9 @@ DaveShade.webGLModule = class extends DaveShade.module {
 
     createFramebuffer(WIDTH, HEIGHT, ATTACHMENTS) {
         //Create and bind the framebuffer
-        const framebuffer = new DaveShade.framebuffer(this.GL.createFramebuffer());
+        const framebuffer = new DaveShade.framebuffer(
+            this.GL.createFramebuffer()
+        );
         this.GL.bindFramebuffer(this.GL.FRAMEBUFFER, framebuffer.FBO);
 
         //Set some wanted values
@@ -517,9 +696,17 @@ DaveShade.webGLModule = class extends DaveShade.module {
             framebuffer.ATTACHMENTS.push(ATTACHMENTS[attID](framebuffer));
         }
 
-        for (let drawBufferID = 0; drawBufferID < framebuffer.COLOR_ATTACHMENTS; drawBufferID++) {
+        for (
+            let drawBufferID = 0;
+            drawBufferID < framebuffer.COLOR_ATTACHMENTS;
+            drawBufferID++
+        ) {
             //framebuffer.drawBuffers.push(this.GL.NONE);
-            framebuffer.DRAW_BUFFERS.push(this.DRAWBUFFER_MANAGER ? this.DRAWBUFFER_MANAGER[`COLOR_ATTACHMENT${drawBufferID}`] : GL[`COLOR_ATTACHMENT${drawBufferID}`]);
+            framebuffer.DRAW_BUFFERS.push(
+                this.DRAWBUFFER_MANAGER
+                    ? this.DRAWBUFFER_MANAGER[`COLOR_ATTACHMENT${drawBufferID}`]
+                    : GL[`COLOR_ATTACHMENT${drawBufferID}`]
+            );
         }
 
         //Push it, use it, return it
@@ -531,8 +718,14 @@ DaveShade.webGLModule = class extends DaveShade.module {
     _quickColorBuffer(INTERNAL_FORMAT, FORMAT, TYPE) {
         return (FRAMEBUFFER) => {
             //Make sure our next buffer is even possible!
-            if (this.GL_VERSION == 1 && !this.DRAWBUFFER_MANAGER && FRAMEBUFFER.COLOR_ATTACHMENTS > 0) {
-                console.error("Cannot have multiple draw buffers! There will be graphical glitches!");
+            if (
+                this.GL_VERSION == 1 &&
+                !this.DRAWBUFFER_MANAGER &&
+                FRAMEBUFFER.COLOR_ATTACHMENTS > 0
+            ) {
+                console.error(
+                    "Cannot have multiple draw buffers! There will be graphical glitches!"
+                );
                 return { resize: () => {} };
             }
 
@@ -542,8 +735,21 @@ DaveShade.webGLModule = class extends DaveShade.module {
                 resize: (width, height) => {
                     renderBufferInfo.width = width;
                     renderBufferInfo.height = height;
-                    this.GL.bindTexture(this.GL.TEXTURE_2D, renderBufferInfo.texture);
-                    this.GL.texImage2D(this.GL.TEXTURE_2D, 0, INTERNAL_FORMAT, width, height, 0, FORMAT, TYPE, null);
+                    this.GL.bindTexture(
+                        this.GL.TEXTURE_2D,
+                        renderBufferInfo.texture
+                    );
+                    this.GL.texImage2D(
+                        this.GL.TEXTURE_2D,
+                        0,
+                        INTERNAL_FORMAT,
+                        width,
+                        height,
+                        0,
+                        FORMAT,
+                        TYPE,
+                        null
+                    );
                 },
                 dispose: () => {
                     this.GL.deleteTexture(renderBufferInfo.texture);
@@ -552,21 +758,39 @@ DaveShade.webGLModule = class extends DaveShade.module {
 
             //Size up the render buffer's texture
             renderBufferInfo.resize(FRAMEBUFFER.width, FRAMEBUFFER.height);
-            this.GL.texParameteri(this.GL.TEXTURE_2D, this.GL.TEXTURE_MIN_FILTER, this.GL.NEAREST);
-            this.GL.texParameteri(this.GL.TEXTURE_2D, this.GL.TEXTURE_MAG_FILTER, this.GL.NEAREST);
+            this.GL.texParameteri(
+                this.GL.TEXTURE_2D,
+                this.GL.TEXTURE_MIN_FILTER,
+                this.GL.NEAREST
+            );
+            this.GL.texParameteri(
+                this.GL.TEXTURE_2D,
+                this.GL.TEXTURE_MAG_FILTER,
+                this.GL.NEAREST
+            );
 
             //Get our color attachment
-            const attachedBuffer = this.DRAWBUFFER_MANAGER ? this.DRAWBUFFER_MANAGER[`COLOR_ATTACHMENT${FRAMEBUFFER.COLOR_ATTACHMENTS}`] : this.GL[`COLOR_ATTACHMENT${FRAMEBUFFER.COLOR_ATTACHMENTS}`];
-            this.GL.framebufferTexture2D(this.GL.FRAMEBUFFER, attachedBuffer, this.GL.TEXTURE_2D, renderBufferInfo.texture, 0);
+            const attachedBuffer = this.DRAWBUFFER_MANAGER
+                ? this.DRAWBUFFER_MANAGER[
+                      `COLOR_ATTACHMENT${FRAMEBUFFER.COLOR_ATTACHMENTS}`
+                  ]
+                : this.GL[`COLOR_ATTACHMENT${FRAMEBUFFER.COLOR_ATTACHMENTS}`];
+            this.GL.framebufferTexture2D(
+                this.GL.FRAMEBUFFER,
+                attachedBuffer,
+                this.GL.TEXTURE_2D,
+                renderBufferInfo.texture,
+                0
+            );
 
             //Increment color attachments
             FRAMEBUFFER.colorAttachments++;
 
             return renderBufferInfo;
-        }
+        };
     }
 
-    useFramebuffer(FRAMEBUFFER) { 
+    useFramebuffer(FRAMEBUFFER) {
         this.GL.bindFramebuffer(this.GL.FRAMEBUFFER, FRAMEBUFFER.FBO);
         //Make sure to use our attachments
         if (this.GL_VERSION > 1) this.GL.drawBuffers(FRAMEBUFFER.DRAW_BUFFERS);
@@ -597,9 +821,253 @@ DaveShade.webGLModule = class extends DaveShade.module {
         FRAMEBUFFER.HEIGHT = HEIGHT;
     }
 
-    createTexture(DATA, WIDTH, HEIGHT) { console.error(`"createTexture" not defined in module ${this.TYPE}!`) }
-    createTextureCube() { console.error(`"createTextureCube" not defined in module ${this.TYPE}!`) }
-    createTexture3D() { console.error(`"createTexture3D" not defined in module ${this.TYPE}!`) }
+    createTexture(DATA, WIDTH, HEIGHT) {
+        const texture = this.GL.createTexture();
+        GL.bindTexture(this.GL.TEXTURE_2D, texture);
+
+        if (DATA instanceof Image) {
+            this.GL.texImage2D(
+                this.GL.TEXTURE_2D,
+                0,
+                this.GL.RGBA,
+                this.GL.RGBA,
+                this.GL.UNSIGNED_BYTE,
+                DATA
+            );
+
+            this.GL.texParameteri(
+                this.GL.TEXTURE_2D,
+                this.GL.TEXTURE_WRAP_S,
+                this.GL.CLAMP_TO_EDGE
+            );
+            this.GL.texParameteri(
+                this.GL.TEXTURE_2D,
+                this.GL.TEXTURE_WRAP_T,
+                this.GL.CLAMP_TO_EDGE
+            );
+            this.GL.texParameteri(
+                this.GL.TEXTURE_2D,
+                this.GL.TEXTURE_MIN_FILTER,
+                this.GL.LINEAR
+            );
+
+            WIDTH = DATA.width;
+            HEIGHT = DATA.height;
+        } else {
+            this.GL.texImage2D(
+                this.GL.TEXTURE_2D,
+                0,
+                this.GL.RGBA,
+                WIDTH,
+                HEIGHT,
+                0,
+                this.GL.RGBA,
+                this.GL.UNSIGNED_BYTE,
+                DATA
+            );
+
+            this.GL.texParameteri(
+                this.GL.TEXTURE_2D,
+                this.GL.TEXTURE_WRAP_S,
+                this.GL.CLAMP_TO_EDGE
+            );
+            this.GL.texParameteri(
+                this.GL.TEXTURE_2D,
+                this.GL.TEXTURE_WRAP_T,
+                this.GL.CLAMP_TO_EDGE
+            );
+            this.GL.texParameteri(
+                this.GL.TEXTURE_2D,
+                this.GL.TEXTURE_MIN_FILTER,
+                this.GL.LINEAR
+            );
+        }
+
+        //Create our texture object
+        const returnedTextureOBJ = new DaveShade.texture();
+
+        //Settings
+        returnedTextureOBJ.TYPE = "TEXTURE2D";
+        returnedTextureOBJ.GL_IDENTIFIER = this.GL.TEXTURE_2D;
+        returnedTextureOBJ.CURRENT_FILTER = this.GL.LINEAR;
+        returnedTextureOBJ.TEXTURE = texture;
+        returnedTextureOBJ.PARENT_MODULE = this;
+        returnedTextureOBJ.WIDTH = WIDTH;
+        returnedTextureOBJ.HEIGHT = HEIGHT;
+
+        return returnedTextureOBJ;
+    }
+
+    createTextureCube(TEXTURES, WIDTH, HEIGHT) {
+        if (!Array.isArray(TEXTURES)) return;
+        if (TEXTURES.length != 6) return;
+
+        //Create our cubemap
+        const texture = this.GL.createTexture();
+        this.GL.bindTexture(this.GL.TEXTURE_CUBE_MAP, texture);
+
+        const sizes = [];
+
+        //Loop through our cubemap
+        for (let texID in TEXTURES) {
+            const data = TEXTURES[texID];
+            const target = daveShadeInstance.cubemapOrder[texID];
+
+            //Parse our textures
+            if (data instanceof Image) {
+                this.GL.texImage2D(
+                    target,
+                    0,
+                    this.GL.RGBA,
+                    this.GL.RGBA,
+                    this.GL.UNSIGNED_BYTE,
+                    data
+                );
+                sizes.push({ WIDTH: data.width, HEIGHT: data.height });
+            } else {
+                this.GL.texImage2D(
+                    target,
+                    0,
+                    this.GL.RGBA,
+                    WIDTH,
+                    HEIGHT,
+                    0,
+                    this.GL.RGBA,
+                    this.GL.UNSIGNED_BYTE,
+                    data
+                );
+                sizes.push({ WIDTH: WIDTH, HEIGHT: HEIGHT });
+            }
+        }
+
+        this.GL.texParameteri(
+            this.GL.TEXTURE_CUBE_MAP,
+            this.GL.TEXTURE_WRAP_S,
+            this.GL.CLAMP_TO_EDGE
+        );
+        this.GL.texParameteri(
+            this.GL.TEXTURE_CUBE_MAP,
+            this.GL.TEXTURE_WRAP_T,
+            this.GL.CLAMP_TO_EDGE
+        );
+        this.GL.texParameteri(this.GL.TEXTURE_CUBE_MAP, this.GL.TEXTURE_MIN_FILTER, this.GL.LINEAR);
+
+        //Create our texture object
+        const returnedTextureOBJ = new DaveShade.texture();
+
+        //Settings
+        returnedTextureOBJ.TYPE = "CUBEMAP";
+        returnedTextureOBJ.GL_IDENTIFIER = this.GL.TEXTURE_CUBE_MAP;
+        returnedTextureOBJ.CURRENT_FILTER = this.GL.LINEAR;
+        returnedTextureOBJ.TEXTURE = texture;
+        returnedTextureOBJ.SIZES = sizes;
+        returnedTextureOBJ.PARENT_MODULE = this;
+
+        return returnedTextureOBJ;
+    }
+
+    createTexture3D(DATA, WIDTH, HEIGHT, DEPTH) {
+        if (!this.GL_VERSION > 1) return;
+
+        const texture = this.GL.createTexture();
+        this.GL.bindTexture(this.GL.TEXTURE_3D, texture);
+
+        //Set our data, if we are using an image make sure the image gets the data
+        if (DATA instanceof Image) {
+            //Use size or split the data in half
+            WIDTH = WIDTH || DATA.height / 2;
+
+            //Set our stuff to be appropriate
+            HEIGHT = WIDTH;
+            DEPTH = DATA.height / WIDTH;
+            WIDTH = DATA.width;
+
+            this.GL.texImage3D(
+                this.GL.TEXTURE_3D,
+                0,
+                this.GL.RGBA,
+                WIDTH,
+                HEIGHT,
+                DEPTH,
+                0,
+                this.GL.RGBA,
+                this.GL.UNSIGNED_BYTE,
+                DATA
+            );
+        } else {
+            this.GL.texImage3D(
+                this.GL.TEXTURE_3D,
+                0,
+                this.GL.RGBA,
+                WIDTH,
+                HEIGHT,
+                DEPTH,
+                0,
+                this.GL.RGBA,
+                this.GL.UNSIGNED_BYTE,
+                DATA
+            );
+        }
+
+        this.GL.texParameteri(
+            this.GL.TEXTURE_3D,
+            this.GL.TEXTURE_WRAP_S,
+            this.GL.CLAMP_TO_EDGE
+        );
+        this.GL.texParameteri(
+            this.GL.TEXTURE_3D,
+            this.GL.TEXTURE_WRAP_T,
+            this.GL.CLAMP_TO_EDGE
+        );
+        this.GL.texParameteri(
+            this.GL.TEXTURE_3D,
+            this.GL.TEXTURE_WRAP_R,
+            this.GL.CLAMP_TO_EDGE
+        );
+        this.GL.texParameteri(
+            this.GL.TEXTURE_3D,
+            this.GL.TEXTURE_MIN_FILTER,
+            this.GL.LINEAR
+        );
+
+        //Create our texture object
+        const returnedTextureOBJ = new DaveShade.texture();
+
+        //Settings
+        returnedTextureOBJ.TYPE = "TEXTURE3D";
+        returnedTextureOBJ.GL_IDENTIFIER = this.GL.TEXTURE_3D;
+        returnedTextureOBJ.CURRENT_FILTER = this.GL.LINEAR;
+        returnedTextureOBJ.TEXTURE = texture;
+        returnedTextureOBJ.SIZES = sizes;
+        returnedTextureOBJ.PARENT_MODULE = this;
+        returnedTextureOBJ.WIDTH = WIDTH;
+        returnedTextureOBJ.HEIGHT = HEIGHT;
+        returnedTextureOBJ.DEPTH = DEPTH;
+
+        return returnedTextureOBJ;
+    }
+
+    setTextureFiltering(TEXTURE, NEW_FILTER, MINIMIZE) {
+        MINIMIZE = MINIMIZE || false;
+
+        if (TEXTURE.CURRENT_FILTER == NEW_FILTER) return;
+
+        this.GL.bindTexture(TEXTURE.GL_IDENTIFIER, TEXTURE);
+        if (MINIMIZE)
+            this.GL.texParameteri(
+                TEXTURE.GL_IDENTIFIER,
+                this.GL.TEXTURE_MIN_FILTER,
+                NEW_FILTER
+            );
+        else
+            this.GL.texParameteri(
+                TEXTURE.GL_IDENTIFIER,
+                this.GL.TEXTURE_MAG_FILTER,
+                NEW_FILTER
+            );
+
+        TEXTURE.CURRENT_FILTER = NEW_FILTER;
+    }
 
     buffersFromJSON(ATTRIBUTE_JSON) {
         const returned = new DaveShade.attributeSet();
@@ -616,17 +1084,26 @@ DaveShade.webGLModule = class extends DaveShade.module {
             //If we have indicies use indicies
             if (key == DaveShade.INDICE_IDENTIFIER) {
                 //Convert if we just have a base array
-                if (Array.isArray(element)) element = new Int32Array(element.flat(4));
+                if (Array.isArray(element))
+                    element = new Int32Array(element.flat(4));
 
                 this.GL.bindBuffer(this.GL.ELEMENT_ARRAY_BUFFER, buffer);
-                this.GL.bufferData(this.GL.ELEMENT_ARRAY_BUFFER, element, this.GL.STATIC_DRAW);
-            }
-            else {
+                this.GL.bufferData(
+                    this.GL.ELEMENT_ARRAY_BUFFER,
+                    element,
+                    this.GL.STATIC_DRAW
+                );
+            } else {
                 //Convert if we just have a base array
-                if (Array.isArray(element)) element = new Float32Array(element.flat(4));
+                if (Array.isArray(element))
+                    element = new Float32Array(element.flat(4));
 
                 this.GL.bindBuffer(this.GL.ARRAY_BUFFER, buffer);
-                this.GL.bufferData(this.GL.ARRAY_BUFFER, element, this.GL.STATIC_DRAW);
+                this.GL.bufferData(
+                    this.GL.ARRAY_BUFFER,
+                    element,
+                    this.GL.STATIC_DRAW
+                );
             }
 
             //Set the key in the buffer
@@ -637,6 +1114,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
         return returned;
     }
 
+    // prettier-ignore
     disposeBuffer(BUFFER) { this.GL.deleteBuffer(BUFFER); }
 
     setBuffer(SHADER, BUFFER_NAME, BUFFER_OBJECT) {
@@ -644,10 +1122,22 @@ DaveShade.webGLModule = class extends DaveShade.module {
         const attributeInfo = SHADER.ATTRIBUTES[BUFFER_NAME];
 
         //Update info if needed
-        if (this.ATTRIBUTE_BINDINGS[attributeInfo.location] == BUFFER_OBJECT.bufferID) return;
-        this.ATTRIBUTE_BINDINGS[attributeInfo.location] = BUFFER_OBJECT.bufferID;
+        if (
+            this.ATTRIBUTE_BINDINGS[attributeInfo.location] ==
+            BUFFER_OBJECT.bufferID
+        )
+            return;
+        this.ATTRIBUTE_BINDINGS[attributeInfo.location] =
+            BUFFER_OBJECT.bufferID;
         this.GL.bindBuffer(this.GL.ARRAY_BUFFER, BUFFER_OBJECT);
-        this.GL.vertexAttribPointer(attributeInfo.location, attributeInfo.divisions, this.GL.FLOAT, false, 0, 0);
+        this.GL.vertexAttribPointer(
+            attributeInfo.location,
+            attributeInfo.divisions,
+            this.GL.FLOAT,
+            false,
+            0,
+            0
+        );
     }
 
     setBufferRaw(SHADER, BUFFER_NAME, RAW_DATA) {
@@ -657,7 +1147,14 @@ DaveShade.webGLModule = class extends DaveShade.module {
         this.ATTRIBUTE_BINDINGS[attributeInfo.location] = 0;
         this.GL.bindBuffer(this.GL.ARRAY_BUFFER, attributeInfo.buffer);
         this.GL.bufferData(this.GL.ARRAY_BUFFER, RAW_DATA, this.GL.STATIC_DRAW);
-        this.GL.vertexAttribPointer(attributeInfo.location, attributeInfo.divisions, this.GL.FLOAT, false, 0, 0);
+        this.GL.vertexAttribPointer(
+            attributeInfo.location,
+            attributeInfo.divisions,
+            this.GL.FLOAT,
+            false,
+            0,
+            0
+        );
     }
 
     drawFromBuffers(SHADER, POINT_COUNT, RENDER_TYPE) {
@@ -665,13 +1162,23 @@ DaveShade.webGLModule = class extends DaveShade.module {
         SHADER.use();
 
         //Draw using indicies if we are using indicies
-        if (!this.USING_INDICIES) this.GL.drawArrays(RENDER_TYPE || this.GL.TRIANGLES, 0, POINT_COUNT);
-        else this.GL.drawElements(RENDER_TYPE || this.GL.TRIANGLES, POINT_COUNT, this.GL.UNSIGNED_INT, 0);
+        if (!this.USING_INDICIES)
+            this.GL.drawArrays(
+                RENDER_TYPE || this.GL.TRIANGLES,
+                0,
+                POINT_COUNT
+            );
+        else
+            this.GL.drawElements(
+                RENDER_TYPE || this.GL.TRIANGLES,
+                POINT_COUNT,
+                this.GL.UNSIGNED_INT,
+                0
+            );
 
         //Increment drawn tri count
         this.POINT_COUNT += POINT_COUNT;
     }
-
 
     resize(WIDTH, HEIGHT) {
         this.CANVAS.width = WIDTH;
@@ -682,9 +1189,8 @@ DaveShade.webGLModule = class extends DaveShade.module {
         }
     }
 
-    viewport(X, Y, WIDTH, HEIGHT) {
-        this.GL.viewport(X, Y, WIDTH, HEIGHT);
-    }
+    // prettier-ignore
+    viewport(X, Y, WIDTH, HEIGHT) { this.GL.viewport(X, Y, WIDTH, HEIGHT); }
 
     clear(TARGET) {
         if (typeof TARGET != "number") return;
@@ -693,6 +1199,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
         this.GL.clear(TARGET);
     }
 
+    // prettier-ignore
     setup(CANVAS, SETTINGS) {
         //Try webGL2 creation first
         this.GL = CANVAS.getContext("webgl2", SETTINGS);
@@ -814,11 +1321,22 @@ DaveShade.webGLModule = class extends DaveShade.module {
 
             return renderBufferInfo;
         };
+
+        //Then lets get that cubemap order
+        this.CUBEMAP_ORDER = [
+            this.GL.TEXTURE_CUBE_MAP_POSITIVE_X,
+            this.GL.TEXTURE_CUBE_MAP_POSITIVE_Y,
+            this.GL.TEXTURE_CUBE_MAP_POSITIVE_Z,
+            this.GL.TEXTURE_CUBE_MAP_NEGATIVE_X,
+            this.GL.TEXTURE_CUBE_MAP_NEGATIVE_Y,
+            this.GL.TEXTURE_CUBE_MAP_NEGATIVE_Z
+        ]
     }
 
     setupTextureReader(CANVAS, SETTINGS) {
         //? create stuff required to render these temporary textures
-        this.TEXTURE_READING_SHADER = this.createShader(`precision highp float;
+        this.TEXTURE_READING_SHADER = this.createShader(
+            `precision highp float;
         attribute vec4 a_position;
         attribute vec2 a_texcoord;
 
@@ -828,7 +1346,8 @@ DaveShade.webGLModule = class extends DaveShade.module {
             gl_Position = a_position;
             v_texCoord = a_texcoord;
         }
-        `,`precision highp float;
+        `,
+            `precision highp float;
         varying vec2 v_texCoord;
 
         uniform sampler2D u_texture;
@@ -836,41 +1355,31 @@ DaveShade.webGLModule = class extends DaveShade.module {
         void main() {
             gl_FragColor = texture2D(u_texture, v_texCoord);
         }
-        `);
+        `
+        );
 
         //? Create the data for the quad
         this.TEXTURE_READING_QUAD = this.buffersFromJSON({
-            a_position: new Float32Array(
-                [
-                    1,-1,0,1,
-                    -1,-1,0,1,
-                    1,1,0,1,
+            a_position: new Float32Array([
+                1, -1, 0, 1, -1, -1, 0, 1, 1, 1, 0, 1,
 
-                    -1,-1,0,1,
-                    -1,1,0,1,
-                    1,1,0,1
-                ]
-            ),
-            a_texcoord: new Float32Array(
-                [
-                    1,0,
-                    0,0,
-                    1,1,
+                -1, -1, 0, 1, -1, 1, 0, 1, 1, 1, 0, 1,
+            ]),
+            a_texcoord: new Float32Array([
+                1, 0, 0, 0, 1, 1,
 
-                    0,0,
-                    0,1,
-                    1,1
-                ]
-            )
+                0, 0, 0, 1, 1, 1,
+            ]),
         });
 
-        this.TEXTURE_READING_BUFFER = this.createFramebuffer(1, 1, [this.RENDERBUFFER_TYPE.TEXTURE_RGBA]);
+        this.TEXTURE_READING_BUFFER = this.createFramebuffer(1, 1, [
+            this.RENDERBUFFER_TYPE.TEXTURE_RGBA,
+        ]);
 
         //? Make sure we are rendering to the canvas!!!
         this.renderToCanvas();
     }
 
-    
     readTexture(TEXTURE, X, Y, W, H) {
         //Make sure width >= 1
         if (typeof W != "number" || !W) W = 1;
@@ -883,18 +1392,26 @@ DaveShade.webGLModule = class extends DaveShade.module {
         //Resize the texture
         this.TEXTURE_READING_BUFFER.resize(TEXTURE.WIDTH, TEXTURE.HEIGHT);
         this.TEXTURE_READING_BUFFER.use();
-        
+
         //Clear and draw
-       this.GL.clear(this.GL.COLOR_BUFFER_BIT);
+        this.GL.clear(this.GL.COLOR_BUFFER_BIT);
         this.TEXTURE_READING_SHADER.setUniform("u_texture", TEXTURE.TEXTURE);
         this.TEXTURE_READING_SHADER.setBuffers(this.TEXTURE_READING_QUAD);
         this.TEXTURE_READING_SHADER.drawFromBuffers(6);
 
         //Then finally get the data
         let output = new Uint8Array(4 * W * H);
-        this.GL.readPixels(X, Y, W, H, this.GL.RGBA, this.GL.UNSIGNED_BYTE, output);
+        this.GL.readPixels(
+            X,
+            Y,
+            W,
+            H,
+            this.GL.RGBA,
+            this.GL.UNSIGNED_BYTE,
+            output
+        );
         //scale it back down to hopefully save ram
-        this.TEXTURE_READING_BUFFER.resize(1,1);
+        this.TEXTURE_READING_BUFFER.resize(1, 1);
 
         return Array.from(output);
     }
@@ -907,15 +1424,23 @@ DaveShade.createInstance = (CANVAS, SETTINGS, WANTED_MODULE) => {
     //Try to find the wanted module
     if (WANTED_MODULE) {
         //Search the array to find one
-        const found = DaveShade.MODULES.find((module) => module.prototype.TYPE == WANTED_MODULE);
-        
+        const found = DaveShade.MODULES.find(
+            (module) => module.prototype.TYPE == WANTED_MODULE
+        );
+
         //If found do a quick check to make sure it is supported
         if (found) {
             if (found.prototype.SUPPORTED) return new found(CANVAS, SETTINGS);
-            else console.warn(`Module "${WANTED_MODULE}" is not supported! Searching for a supported one.`);
+            else
+                console.warn(
+                    `Module "${WANTED_MODULE}" is not supported! Searching for a supported one.`
+                );
         }
         //If not found continue with a search
-        else console.warn(`Module "${WANTED_MODULE}" not found! Doing a search.`);
+        else
+            console.warn(
+                `Module "${WANTED_MODULE}" not found! Doing a search.`
+            );
     }
 
     let bestModule = null;
@@ -938,8 +1463,8 @@ DaveShade.createInstance = (CANVAS, SETTINGS, WANTED_MODULE) => {
         return new bestModule(CANVAS, SETTINGS);
     }
 
-    console.error("No module is supported!")    
-}
+    console.error("No module is supported!");
+};
 
 //A GLSL helper function
 DaveShade.findFunctionInGLSL = (glsl, func, type) => {
