@@ -7,14 +7,12 @@ attribute highp vec3 a_colour;
 
 varying highp vec3 v_colour;
 
-void main() {
+void vertex() {
 	gl_Position = a_position;
     v_colour = a_colour;
 }
-`,`
-varying highp vec3 v_colour;
 
-void main() {
+void fragment() {
     gl_FragColor = vec4(v_colour, 1);
 }
 `);

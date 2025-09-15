@@ -347,6 +347,25 @@ DaveShade.webGLModule = class extends DaveShade.module {
     }
 
     createShader(VERTEX, FRAGMENT) {
+        if ((!VERTEX) && (!FRAGMENT)) {
+            console.error("Missing VERTEX and FRAGMENT when making shader.")
+            return;
+        }
+
+        //Decompose if we where only given the first argument
+        if (!FRAGMENT) {
+            const vertexFunction = DaveShade.findFunctionInGLSL(VERTEX, "vertex");
+            const fragmentFunction = DaveShade.findFunctionInGLSL(VERTEX, "fragment");
+
+            if (!vertexFunction || !fragmentFunction) return {
+                status: this.COMPILE_STATUS.FAILURE,
+            };
+
+            //Replace things that are required
+            FRAGMENT = VERTEX.replace(vertexFunction, "").replace(this.REGEX.ATTRIBUTE, "").replace(fragmentFunction.split("(")[0], "void main");
+            VERTEX = VERTEX.replace(fragmentFunction, "").replace(vertexFunction.split("(")[0], "void main");
+        }
+
         //Create our shader and add it to the list
         const createdShader = new DaveShade.shader();
 
@@ -893,3 +912,37 @@ DaveShade.createInstance = (CANVAS, SETTINGS, WANTED_MODULE) => {
 
     console.error("No module is supported!")    
 }
+
+//A GLSL helper function
+DaveShade.findFunctionInGLSL = (glsl, func, type) => {
+    type = type || "void";
+    func = func || "func";
+
+    //Match out the function
+    const matches = glsl.match(RegExp(`(${type})(\\s*)(${func})`));
+    if (matches && matches.length > 0) {
+        let matcher = matches[0];
+        let inFunction = 0;
+        let funcCode = "";
+        const charIndex = glsl.indexOf(matcher);
+
+        //Loop through every character until we get out of the function
+        for (let index = charIndex; index < glsl.length; index++) {
+            let char = glsl.charAt(index);
+            funcCode += char;
+
+            if (char == "{") {
+                inFunction++;
+            } else if (char == "}") {
+                inFunction--;
+                if (inFunction == 0) {
+                    //Return our code if we get out of our function
+                    return funcCode;
+                }
+            }
+        }
+    }
+
+    //Return a blank if we don't have any function
+    return "";
+};
