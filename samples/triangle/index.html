@@ -6,7 +6,23 @@
     <title>Triangle</title>
 </head>
 <body>
+    <canvas id="canvas" width="480" height="360"></canvas>
     <script src="../../dist/DS3.js"></script>
     <script src="main.js"></script>
+    <style>
+        canvas {
+            position: absolute;
+
+            /* Position */
+            top: 0%;
+            left: 50%;
+
+            transform: translate(-50%, 0%);
+
+            /* Resize */
+            aspect-ratio: 4/3;
+            height: 100%;
+        }
+    </style>
 </body>
 </html>
