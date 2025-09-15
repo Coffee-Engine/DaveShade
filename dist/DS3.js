@@ -110,7 +110,7 @@ DaveShade.module = class {
         this.setup(CANVAS, SETTINGS);
         this.setupTextureReader(CANVAS, SETTINGS);
     }
-}
+};
 
 //Define data holding classes
 DaveShade.shader = class {
@@ -181,7 +181,7 @@ DaveShade.shader = class {
     drawFromBuffers(POINT_COUNT, RENDER_TYPE) {
         this.PARENT_MODULE.drawFromBuffers(this, POINT_COUNT, RENDER_TYPE);
     }
-}
+};
 
 DaveShade.attributeSet = class {
     //Simple one-liner.
@@ -189,7 +189,7 @@ DaveShade.attributeSet = class {
     PARENT_MODULE = null;
 
     dispose() { for (const key in ATTRIBUTES) { this.PARENT_MODULE.disposeBuffer(this.ATTRIBUTES[key]); } }
-}
+};
 
 DaveShade.framebuffer = class {
     ATTACHMENTS = [];
@@ -208,7 +208,7 @@ DaveShade.framebuffer = class {
     constructor(FBO) {
         this.FBO = FBO;
     }
-}
+};
 
 //Now for the base webGL module
 DaveShade.webGLModule = class extends DaveShade.module {
@@ -463,7 +463,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
 
     renderToCanvas() {
         this.GL.bindFramebuffer(this.GL.FRAMEBUFFER, null);
-        if (this.GL_VERSION == 2) this.GL.drawBuffers([this.GL.BACK]);
+        if (this.GL_VERSION > 1) this.GL.drawBuffers([this.GL.BACK]);
         this.GL.viewport(0, 0, this.CANVAS.width, this.CANVAS.height);
     }
 
@@ -531,7 +531,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
     useFramebuffer(FRAMEBUFFER) { 
         this.GL.bindFramebuffer(this.GL.FRAMEBUFFER, FRAMEBUFFER.FBO);
         //Make sure to use our attachments
-        if (this.GL_VERSION == 2) this.GL.drawBuffers(FRAMEBUFFER.DRAW_BUFFERS);
+        if (this.GL_VERSION > 1) this.GL.drawBuffers(FRAMEBUFFER.DRAW_BUFFERS);
         this.GL.viewport(0, 0, FRAMEBUFFER.WIDTH, FRAMEBUFFER.HEIGHT);
     }
 
@@ -733,7 +733,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
         //Renderbuffer types
         this.RENDERBUFFER_TYPE.TEXTURE_RGB = this._quickColorBuffer(this.GL.RGB, this.GL.RGB, this.GL.UNSIGNED_BYTE);
         this.RENDERBUFFER_TYPE.TEXTURE_RGBA = this._quickColorBuffer(this.GL.RGBA, this.GL.RGBA, this.GL.UNSIGNED_BYTE);
-        if (this.GL_VERSION != 1) {
+        if (this.GL_VERSION > 1) {
             this.RENDERBUFFER_TYPE.TEXTURE_RGBA_FLOAT = this._quickColorBuffer(this.GL.RGBA16F, this.GL.RGBA, this.GL.FLOAT);
             this.RENDERBUFFER_TYPE.TEXTURE_R = this._quickColorBuffer(this.GL.R8, this.GL.RED, this.GL.UNSIGNED_BYTE);
             this.RENDERBUFFER_TYPE.TEXTURE_R_FLOAT = this._quickColorBuffer(this.GL.R16F, this.GL.RED, this.GL.FLOAT);
@@ -819,6 +819,14 @@ DaveShade.webGLModule = class extends DaveShade.module {
 
     
     readTexture(TEXTURE, X, Y, W, H) {
+        //Make sure width >= 1
+        if (typeof W != "number" || !W) W = 1;
+        else W = Math.max(1, W);
+
+        //Make sure height >= 1
+        if (typeof H != "number" || !H) H = 1;
+        else H = Math.max(1, H);
+
         //Resize the texture
         this.TEXTURE_READING_BUFFER.resize(TEXTURE.WIDTH, TEXTURE.HEIGHT);
         this.TEXTURE_READING_BUFFER.use();
@@ -830,7 +838,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
         this.TEXTURE_READING_SHADER.drawFromBuffers(6);
 
         //Then finally get the data
-        let output = new Uint8Array(4);
+        let output = new Uint8Array(4 * W * H);
         this.GL.readPixels(X, Y, W, H, this.GL.RGBA, this.GL.UNSIGNED_BYTE, output);
         //scale it back down to hopefully save ram
         this.TEXTURE_READING_BUFFER.resize(1,1);
