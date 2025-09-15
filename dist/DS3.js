@@ -199,7 +199,7 @@ DaveShade.attributeSet = class {
     PARENT_MODULE = null;
 
     dispose() {
-        for (const key in ATTRIBUTES) {
+        for (const key in this.ATTRIBUTES) {
             this.PARENT_MODULE.disposeBuffer(this.ATTRIBUTES[key]);
         }
     }
@@ -236,7 +236,6 @@ DaveShade.texture = class {
     get texture() { return this.TEXTURE; }
 
     TYPE = "TEXTURE2D";
-    CURRENT_FILTER = 0;
 
     WIDTH = 0;
     get width() { return this.WIDTH; }
@@ -249,7 +248,9 @@ DaveShade.texture = class {
 
     PARENT_MODULE = null;
 
-    setFiltering(NEW_FILTER, MINIMIZE) {}
+    setFiltering(NEW_FILTER, MINIMIZE) {
+        this.PARENT_MODULE.setFiltering(this, NEW_FILTER, MINIMIZE);
+    }
 };
 
 //Now for the base webGL module
@@ -285,8 +286,8 @@ DaveShade.webGLModule = class extends DaveShade.module {
                 SHADER.uniforms[uniformName] = [];
 
                 for (let index = 0; index < arrayLength; index++) {
-                    const location = this.GL.getUniformLocation(SHADER.PROGRAM,
-                        `${uniformName}[${index}]`);
+                    const location = this.GL.getUniformLocation(SHADER.PROGRAM, `${uniformName}[${index}]`);
+                    const module = this;
 
                     SHADER.uniforms[uniformName].push({
                         location: location,
@@ -295,7 +296,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
                         _value: null,
 
                         set value(value) {
-                            this.setUniform(SHADER, uniformName, value);
+                            module.setUniform(SHADER, uniformName, value);
                         },
                         get value() {
                             return SHADER.UNIFORMS[uniformName]["_value"];
@@ -321,7 +322,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
             }
 
             if (uniformInfo.type == 35678) {
-                uniformInfo.SAMPLER_ID = SHADER.TEXTURE_COUNT;
+                SHADER.UNIFORMS[uniformName].SAMPLER_ID = SHADER.TEXTURE_COUNT;
                 SHADER.TEXTURE_COUNT += 1;
             }
         }
@@ -507,7 +508,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
         const uniformInfo = SHADER.UNIFORMS[UNIFORM];
 
         uniformInfo["_value"] = VALUE;
-        this.SETTERS[uniformInfo.type](uniformInfo.location,VALUE,uniformInfo);
+        this.SETTERS[uniformInfo.type](uniformInfo.location, VALUE, uniformInfo);
     }
 
     useZBuffer(FUNC) {
@@ -676,7 +677,6 @@ DaveShade.webGLModule = class extends DaveShade.module {
         //Settings
         returnedTextureOBJ.TYPE = "TEXTURE2D";
         returnedTextureOBJ.GL_IDENTIFIER = this.GL.TEXTURE_2D;
-        returnedTextureOBJ.CURRENT_FILTER = this.GL.LINEAR;
         returnedTextureOBJ.TEXTURE = texture;
         returnedTextureOBJ.PARENT_MODULE = this;
         returnedTextureOBJ.WIDTH = WIDTH;
@@ -710,8 +710,8 @@ DaveShade.webGLModule = class extends DaveShade.module {
             }
         }
 
-        this.GL.texParameteri(this.GL.TEXTURE_CUBE_MAP,this.GL.TEXTURE_WRAP_S,this.GL.CLAMP_TO_EDGE);
-        this.GL.texParameteri(this.GL.TEXTURE_CUBE_MAP,this.GL.TEXTURE_WRAP_T,this.GL.CLAMP_TO_EDGE);
+        this.GL.texParameteri(this.GL.TEXTURE_CUBE_MAP, this.GL.TEXTURE_WRAP_S, this.GL.CLAMP_TO_EDGE);
+        this.GL.texParameteri(this.GL.TEXTURE_CUBE_MAP, this.GL.TEXTURE_WRAP_T, this.GL.CLAMP_TO_EDGE);
         this.GL.texParameteri(this.GL.TEXTURE_CUBE_MAP, this.GL.TEXTURE_MIN_FILTER, this.GL.LINEAR);
 
         //Create our texture object
@@ -720,7 +720,6 @@ DaveShade.webGLModule = class extends DaveShade.module {
         //Settings
         returnedTextureOBJ.TYPE = "CUBEMAP";
         returnedTextureOBJ.GL_IDENTIFIER = this.GL.TEXTURE_CUBE_MAP;
-        returnedTextureOBJ.CURRENT_FILTER = this.GL.LINEAR;
         returnedTextureOBJ.TEXTURE = texture;
         returnedTextureOBJ.SIZES = sizes;
         returnedTextureOBJ.PARENT_MODULE = this;
@@ -759,7 +758,6 @@ DaveShade.webGLModule = class extends DaveShade.module {
         //Settings
         returnedTextureOBJ.TYPE = "TEXTURE3D";
         returnedTextureOBJ.GL_IDENTIFIER = this.GL.TEXTURE_3D;
-        returnedTextureOBJ.CURRENT_FILTER = this.GL.LINEAR;
         returnedTextureOBJ.TEXTURE = texture;
         returnedTextureOBJ.SIZES = sizes;
         returnedTextureOBJ.PARENT_MODULE = this;
@@ -770,16 +768,13 @@ DaveShade.webGLModule = class extends DaveShade.module {
         return returnedTextureOBJ;
     }
 
-    setTextureFiltering(TEXTURE, NEW_FILTER, MINIMIZE) {
+    setFiltering(TEXTURE, NEW_FILTER, MINIMIZE) {
         MINIMIZE = MINIMIZE || false;
 
-        if (TEXTURE.CURRENT_FILTER == NEW_FILTER) return;
+        this.GL.bindTexture(TEXTURE.GL_IDENTIFIER, TEXTURE.TEXTURE);
 
-        this.GL.bindTexture(TEXTURE.GL_IDENTIFIER, TEXTURE);
-        if (MINIMIZE) this.GL.texParameteri(TEXTURE.GL_IDENTIFIER,this.GL.TEXTURE_MIN_FILTER,NEW_FILTER);
-        else this.GL.texParameteri(TEXTURE.GL_IDENTIFIER,this.GL.TEXTURE_MAG_FILTER,NEW_FILTER);
-
-        TEXTURE.CURRENT_FILTER = NEW_FILTER;
+        if (MINIMIZE) this.GL.texParameteri(TEXTURE.GL_IDENTIFIER, this.GL.TEXTURE_MIN_FILTER, NEW_FILTER);
+        else this.GL.texParameteri(TEXTURE.GL_IDENTIFIER, this.GL.TEXTURE_MAG_FILTER, NEW_FILTER);
     }
 
     buffersFromJSON(ATTRIBUTE_JSON) {
@@ -950,9 +945,9 @@ DaveShade.webGLModule = class extends DaveShade.module {
         this.SETTERS[this.GL.FLOAT_VEC3] = (LOCATION, VALUE) => { this.GL.uniform3fv(LOCATION, VALUE); }
         this.SETTERS[this.GL.FLOAT_VEC4] = (LOCATION, VALUE) => { this.GL.uniform4fv(LOCATION, VALUE); }
         
-        this.SETTERS[this.GL.FLOAT_MAT2] = (LOCATION, VALUE) => { this.GL.uniformMatrix2fv(LOCATION, VALUE); }
-        this.SETTERS[this.GL.FLOAT_MAT3] = (LOCATION, VALUE) => { this.GL.uniformMatrix3fv(LOCATION, VALUE); }
-        this.SETTERS[this.GL.FLOAT_MAT4] = (LOCATION, VALUE) => { this.GL.uniformMatrix4fv(LOCATION, VALUE); }
+        this.SETTERS[this.GL.FLOAT_MAT2] = (LOCATION, VALUE) => { this.GL.uniformMatrix2fv(LOCATION, false, VALUE); }
+        this.SETTERS[this.GL.FLOAT_MAT3] = (LOCATION, VALUE) => { this.GL.uniformMatrix3fv(LOCATION, false, VALUE); }
+        this.SETTERS[this.GL.FLOAT_MAT4] = (LOCATION, VALUE) => { this.GL.uniformMatrix4fv(LOCATION, false, VALUE); }
 
         //Finally the textures, these ones are a little more complicated
         this.SETTERS[this.GL.SAMPLER_2D] = (LOCATION, VALUE, UNIFORM_INFO) => {
