@@ -31,6 +31,7 @@ window.DaveShade = {
 };
 
 //Module Creation
+// prettier-ignore
 DaveShade.module = class {
     COMPILE_STATUS = {
         SUCCESS: 1,
@@ -341,7 +342,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
             SHADER.ATTRIBUTES[attributeDef.name].set = (newValue) => {
                 if (this.oldAttributes[location] == newValue.bufferID) return;
                 this.oldAttributes[location] = newValue.bufferID;
-                this.GL.bindBuffer(GL.ARRAY_BUFFER, newValue);
+                this.GL.bindBuffer(this.GL.ARRAY_BUFFER, newValue);
                 this.GL.vertexAttribPointer(location, divisions, this.GL.FLOAT, false, 0, 0);
             };
 
@@ -439,13 +440,13 @@ DaveShade.webGLModule = class extends DaveShade.module {
 
         //*Delete the program and shaders
         if (SHADER.PROGRAM) {
-            GL.deleteProgram(SHADER.PROGRAM);
+           this.GL.deleteProgram(SHADER.PROGRAM);
         }
         if (SHADER.VERTEX.shader) {
-            GL.deleteShader(SHADER.VERTEX.shader);
+           this.GL.deleteShader(SHADER.VERTEX.shader);
         }
         if (SHADER.FRAGMENT.shader) {
-            GL.deleteShader(SHADER.FRAGMENT.shader);
+           this.GL.deleteShader(SHADER.FRAGMENT.shader);
         }
     }
     
@@ -465,16 +466,16 @@ DaveShade.webGLModule = class extends DaveShade.module {
         //Classic "BOOL"
         switch (typeof FUNC) {
             case "boolean":
-                if (FUNC) GL.enable(GL.DEPTH_TEST);
-                else GL.disable(GL.DEPTH_TEST);
+                if (FUNC) this.GL.enable(this.GL.DEPTH_TEST);
+                else this.GL.disable(this.GL.DEPTH_TEST);
                 
-                GL.depthFunc(FUNC ? GL.LEQUAL : GL.NEVER);
+               this.GL.depthFunc(FUNC ? this.GL.LEQUAL : this.GL.NEVER);
                 break;
             
             case "number":
-                if (FUNC == this.DEPTH_FUNC.NEVER) GL.disable(GL.DEPTH_TEST);
-                else GL.enable(GL.DEPTH_TEST);
-                GL.depthFunc(FUNC);
+                if (FUNC == this.DEPTH_FUNC.NEVER) this.GL.disable(this.GL.DEPTH_TEST);
+                else this.GL.enable(this.GL.DEPTH_TEST);
+                this.GL.depthFunc(FUNC);
                 break;
         
             default:
@@ -509,6 +510,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
         //Set some wanted values
         framebuffer.WIDTH = WIDTH;
         framebuffer.HEIGHT = HEIGHT;
+        framebuffer.PARENT_MODULE = this;
 
         //Add the attachements
         for (let attID in ATTACHMENTS) {
@@ -516,7 +518,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
         }
 
         for (let drawBufferID = 0; drawBufferID < framebuffer.COLOR_ATTACHMENTS; drawBufferID++) {
-            //framebuffer.drawBuffers.push(GL.NONE);
+            //framebuffer.drawBuffers.push(this.GL.NONE);
             framebuffer.DRAW_BUFFERS.push(this.DRAWBUFFER_MANAGER ? this.DRAWBUFFER_MANAGER[`COLOR_ATTACHMENT${drawBufferID}`] : GL[`COLOR_ATTACHMENT${drawBufferID}`]);
         }
 
@@ -707,6 +709,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
         } 
         //Else we add our extensions
         else {
+            this.GL_VERSION = 2;
             this.COLORBUFFER_FLOAT = this.GL.getExtension("EXT_color_buffer_float");
             this.FLOAT_BLEND = this.GL.getExtension("EXT_float_blend");
         }
@@ -882,7 +885,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
         this.TEXTURE_READING_BUFFER.use();
         
         //Clear and draw
-        GL.clear(GL.COLOR_BUFFER_BIT);
+       this.GL.clear(this.GL.COLOR_BUFFER_BIT);
         this.TEXTURE_READING_SHADER.setUniform("u_texture", TEXTURE.TEXTURE);
         this.TEXTURE_READING_SHADER.setBuffers(this.TEXTURE_READING_QUAD);
         this.TEXTURE_READING_SHADER.drawFromBuffers(6);
