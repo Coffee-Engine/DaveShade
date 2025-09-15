@@ -823,7 +823,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
 
     createTexture(DATA, WIDTH, HEIGHT) {
         const texture = this.GL.createTexture();
-        GL.bindTexture(this.GL.TEXTURE_2D, texture);
+        this.GL.bindTexture(this.GL.TEXTURE_2D, texture);
 
         if (DATA instanceof Image) {
             this.GL.texImage2D(
