@@ -87,6 +87,7 @@ DaveShade.module = class {
     createTexture3D() { console.error(`"createTexture3D" not defined in module ${this.TYPE}!`) }
 
     buffersFromJSON(ATTRIBUTE_JSON) { console.error(`"buffersFromJSON" not defined in module ${this.TYPE}!`) }
+    changeBufferData(BUFFER, NEW_DATA, IS_INDICES) { console.error(`"changeBufferData" not defined in module ${this.TYPE}!`) }
     disposeBuffer(BUFFER) { console.error(`"disposeBuffer" not defined in module ${this.TYPE}!`) };
 
     setBuffer(SHADER, BUFFER_NAME, BUFFER_OBJECT) { console.error(`"setBuffer" not defined in module ${this.TYPE}!`) }
@@ -201,6 +202,14 @@ DaveShade.attributeSet = class {
     dispose() {
         for (const key in this.ATTRIBUTES) {
             this.PARENT_MODULE.disposeBuffer(this.ATTRIBUTES[key]);
+        }
+    }
+
+    setData(NEW_DATA) {
+        for (let key in this.ATTRIBUTES) {
+            if (NEW_DATA[key]) {
+                this.PARENT_MODULE.changeBufferData(this.ATTRIBUTES[key], NEW_DATA[key]);
+            }
         }
     }
 };
@@ -856,6 +865,23 @@ DaveShade.webGLModule = class extends DaveShade.module {
 
         this.BUFFERS.push(returned);
         return returned;
+    }
+
+    changeBufferData(BUFFER, NEW_DATA, IS_INDICES) {
+        if (IS_INDICES) {
+            //Convert if we just have a base array
+            if (Array.isArray(NEW_DATA)) NEW_DATA = new Int32Array(NEW_DATA.flat(4));
+
+            this.GL.bindBuffer(this.GL.ELEMENT_ARRAY_BUFFER, BUFFER);
+            this.GL.bufferData(this.GL.ELEMENT_ARRAY_BUFFER, NEW_DATA, this.GL.STATIC_DRAW);
+        }
+        else {
+            //Convert if we just have a base array
+            if (Array.isArray(NEW_DATA)) NEW_DATA = new Float32Array(NEW_DATA.flat(4));
+
+            this.GL.bindBuffer(this.GL.ARRAY_BUFFER, BUFFER);
+            this.GL.bufferData(this.GL.ARRAY_BUFFER, NEW_DATA, this.GL.STATIC_DRAW);
+        }
     }
 
     // prettier-ignore
