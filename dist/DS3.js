@@ -87,6 +87,7 @@ DaveShade.module = class {
     createTexture3D() { console.error(`"createTexture3D" not defined in module ${this.TYPE}!`) }
 
     buffersFromJSON(ATTRIBUTE_JSON) { console.error(`"buffersFromJSON" not defined in module ${this.TYPE}!`) }
+    changeBufferData(BUFFER, NEW_DATA, IS_INDICES) { console.error(`"changeBufferData" not defined in module ${this.TYPE}!`) }
     disposeBuffer(BUFFER) { console.error(`"disposeBuffer" not defined in module ${this.TYPE}!`) };
 
     setBuffer(SHADER, BUFFER_NAME, BUFFER_OBJECT) { console.error(`"setBuffer" not defined in module ${this.TYPE}!`) }
@@ -103,6 +104,18 @@ DaveShade.module = class {
     setup(CANVAS, SETTINGS) { console.warn(`${this.TYPE} doesn't have a "setup" function. Does it exist?`) }
     setupTextureReader(CANVAS, SETTINGS) { console.warn(`${this.TYPE} doesn't have a "setupTextureReader" function. Does it exist?`) }
     readTexture(TEXTURE, X, Y, W, H) {}
+
+    async shaderFromURL(VERTEX, FRAGMENT) {
+        if (VERTEX && FRAGMENT) {
+            const fetchedVertex = await fetch(VERTEX).then(result => result.text());
+            const fetchedFragment = await fetch(FRAGMENT).then(result => result.text());
+            return this.createShader(fetchedVertex, fetchedFragment);
+        }
+
+        //For single file shaders
+        const fetched = await fetch(VERTEX).then(result => result.text());
+        return this.createShader(fetched);
+    }
 
     constructor(CANVAS, SETTINGS) {
         //Remove ourselves if canvas doesn't exist
@@ -201,6 +214,14 @@ DaveShade.attributeSet = class {
     dispose() {
         for (const key in this.ATTRIBUTES) {
             this.PARENT_MODULE.disposeBuffer(this.ATTRIBUTES[key]);
+        }
+    }
+
+    setData(NEW_DATA) {
+        for (let key in this.ATTRIBUTES) {
+            if (NEW_DATA[key]) {
+                this.PARENT_MODULE.changeBufferData(this.ATTRIBUTES[key], NEW_DATA[key]);
+            }
         }
     }
 };
@@ -467,7 +488,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
         //? could potentially be better?
         if (!this.GL.getShaderParameter(createdShader.FRAGMENT.shader, this.GL.COMPILE_STATUS)) {
             console.error(`shader not compiled!\nclearing memory\nCompile Log\n***\n${this.GL.getShaderInfoLog(createdShader.FRAGMENT.shader)}\n***`);
-            this.clearShaderFromMemory(createdShader);
+            this.disposeShader(createdShader);
             return {
                 status: this.COMPILE_STATUS.FAILURE,
             };
@@ -484,7 +505,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
         //? could potentially be better?
         if (!this.GL.getProgramParameter(createdShader.PROGRAM, this.GL.LINK_STATUS)) {
             console.error(`shader not compiled!\nerror in program linking!\nclearing memory\nlink log\n***\n${gl.getProgramInfoLog(createdShader.PROGRAM)}\n***`);
-            this.clearShaderFromMemory(createdShader);
+            this.disposeShader(createdShader);
             return {
                 status: this.COMPILE_STATUS.FAILURE,
             };
@@ -561,6 +582,11 @@ DaveShade.webGLModule = class extends DaveShade.module {
     }
 
     cullFace(SIDE) {
+        if (typeof SIDE == "undefined") {
+            this.GL.disable(this.GL.CULL_FACE);
+            return;
+        }
+        
         if (typeof SIDE != "number") return;
 
         if (SIDE == 0) {
@@ -856,6 +882,23 @@ DaveShade.webGLModule = class extends DaveShade.module {
 
         this.BUFFERS.push(returned);
         return returned;
+    }
+
+    changeBufferData(BUFFER, NEW_DATA, IS_INDICES) {
+        if (IS_INDICES) {
+            //Convert if we just have a base array
+            if (Array.isArray(NEW_DATA)) NEW_DATA = new Int32Array(NEW_DATA.flat(4));
+
+            this.GL.bindBuffer(this.GL.ELEMENT_ARRAY_BUFFER, BUFFER);
+            this.GL.bufferData(this.GL.ELEMENT_ARRAY_BUFFER, NEW_DATA, this.GL.STATIC_DRAW);
+        }
+        else {
+            //Convert if we just have a base array
+            if (Array.isArray(NEW_DATA)) NEW_DATA = new Float32Array(NEW_DATA.flat(4));
+
+            this.GL.bindBuffer(this.GL.ARRAY_BUFFER, BUFFER);
+            this.GL.bufferData(this.GL.ARRAY_BUFFER, NEW_DATA, this.GL.STATIC_DRAW);
+        }
     }
 
     // prettier-ignore
