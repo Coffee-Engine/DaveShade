@@ -24,6 +24,13 @@ const instance = DaveShade.createInstance(CANVAS, {
 });
 ```
 
+<p>If you have more than one module installed you can also specify the module after the options</p>
+
+```js
+//WEBGL is the default module, we have no other modules by default
+const instance = DaveShade.createInstance(CANVAS, {}, "WEBGL");
+```
+
 <p>Creating a shader is fairly straightforward, you will need to call <code>DaveShade.createShader</code></p>
 
 ```js
@@ -45,12 +52,11 @@ const myShader = instance.createShader(`//Vertex
 ```js
 //We will create a buffer as shown
 const myBuffer = instance.buffersFromJSON({
-    //This will change in the future so that you don't have to manually make F32 Arrays.
-    a_position: new Float32Array([
+    a_position: [
         0,0,1,1,
         1,0,1,1,
         0,1,1,1
-    ])
+    ]
 });
 
 //Then we will bindit to our shader.
