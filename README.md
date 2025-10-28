@@ -1,5 +1,5 @@
 <img align="center" src="github/Logo.svg"></img>
-<h2>A WebGL rendering library with portability in mind.</h2>
+<h2>A rendering library with portability and compatibility in mind.</h2>
 
 <p>DaveShade is meant to abstract WebGL and any future rendering libraries into a set of easy to use and easy to manage components and functions.</p>
 
