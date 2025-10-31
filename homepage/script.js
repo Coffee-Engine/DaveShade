@@ -1,6 +1,5 @@
 (async function () {
     const instance = DaveShade.createInstance(mainCanvas);
-    console.log(instance);
 
     const geometry = instance.buffersFromJSON({
         a_position: [
