@@ -646,14 +646,14 @@ DaveShade.webGLModule = class extends DaveShade.module {
 
             //define our info
             const renderBufferInfo = {
-                texture: this.GL.createTexture(), resize: (width, height) => {
-                    renderBufferInfo.width = width;
-                    renderBufferInfo.height = height;
-                    this.GL.bindTexture(this.GL.TEXTURE_2D, renderBufferInfo.texture);
+                TEXTURE: this.GL.createTexture(), resize: (width, height) => {
+                    renderBufferInfo.WIDTH = width;
+                    renderBufferInfo.HEIGHT = height;
+                    this.GL.bindTexture(this.GL.TEXTURE_2D, renderBufferInfo.TEXTURE);
                     this.GL.texImage2D(this.GL.TEXTURE_2D, 0, INTERNAL_FORMAT, width, height, 0, FORMAT, TYPE, null);
                 },
                 dispose: () => {
-                    this.GL.deleteTexture(renderBufferInfo.texture);
+                    this.GL.deleteTexture(renderBufferInfo.TEXTURE);
                 },
             };
 
@@ -667,7 +667,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
                 ? this.DRAWBUFFER_MANAGER[`COLOR_ATTACHMENT${FRAMEBUFFER.COLOR_ATTACHMENTS}`]
                 : this.GL[`COLOR_ATTACHMENT${FRAMEBUFFER.COLOR_ATTACHMENTS}`];
             
-            this.GL.framebufferTexture2D(this.GL.FRAMEBUFFER, attachedBuffer, this.GL.TEXTURE_2D, renderBufferInfo.texture, 0);
+            this.GL.framebufferTexture2D(this.GL.FRAMEBUFFER, attachedBuffer, this.GL.TEXTURE_2D, renderBufferInfo.TEXTURE, 0);
 
             //Increment color attachments
             FRAMEBUFFER.COLOR_ATTACHMENTS++;
@@ -954,7 +954,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
     clear(TARGET) {
         if (typeof TARGET != "number") return;
 
-        this.TRI_COUNT = 0;
+        this.POINT_COUNT = 0;
         this.GL.clear(TARGET);
     }
 
@@ -1089,8 +1089,8 @@ DaveShade.webGLModule = class extends DaveShade.module {
             const renderBufferInfo = {
                 renderBuffer: this.GL.createRenderbuffer(),
                 resize: (width, height) => {
-                    renderBufferInfo.width = width;
-                    renderBufferInfo.height = height;
+                    renderBufferInfo.WIDTH = width;
+                    renderBufferInfo.HEIGHT = height;
                     this.GL.bindRenderbuffer(this.GL.RENDERBUFFER, renderBufferInfo.renderBuffer);
                     this.GL.renderbufferStorage(this.GL.RENDERBUFFER, this.GL.DEPTH_COMPONENT16, width, height);
                 },
@@ -1100,7 +1100,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
             };
 
             //Resize and attach our buffer
-            renderBufferInfo.resize(FRAMEBUFFER.width, FRAMEBUFFER.height);
+            renderBufferInfo.resize(FRAMEBUFFER.WIDTH, FRAMEBUFFER.HEIGHT);
             this.GL.framebufferRenderbuffer(this.GL.FRAMEBUFFER, this.GL.DEPTH_ATTACHMENT, this.GL.RENDERBUFFER, renderBufferInfo.renderBuffer);
 
             return renderBufferInfo;
@@ -1157,13 +1157,13 @@ DaveShade.webGLModule = class extends DaveShade.module {
                 1, 1, 0, 1
             ]),
             a_texcoord: new Float32Array([
-                1, 0,
-                0, 0,
                 1, 1,
-
-                0, 0,
                 0, 1,
-                1, 1
+                1, 0,
+
+                0, 1,
+                0, 0,
+                1, 0
             ]),
         });
 
