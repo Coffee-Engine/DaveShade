@@ -46,7 +46,9 @@ DaveShade.module = class {
     //Things we might want
     CANVAS = null;
     SHADERS = [];
+    TEXTURES = [];
     BUFFERS = [];
+    ATTRIBUTE_SETS = [];
     FRAMEBUFFERS = [];
     ATTRIBUTE_BINDINGS = {};
     POINT_COUNT = 0;
@@ -59,6 +61,7 @@ DaveShade.module = class {
     FILTERING = {};
     RENDERBUFFER_TYPE = {};
     CUBEMAP_ORDER = [];
+    WRAP_DIRECTION = {};
     CLEAR_TARGET = {};
     DEPTH_FUNC = {};
     BLEND_FUNC = {};
@@ -67,46 +70,69 @@ DaveShade.module = class {
     get PRIORITY() { return 1; }
     get TYPE() { return "GENERIC"; };
 
+    //Quick helper function
+    _REMOVE_FROM_ARRAY(ARR, VAL) {
+        if (ARR.includes(VAL)) { ARR.splice(ARR.indexOf(VAL), 1); }
+    }
+
     //Private variable for the buffer incrementing system
     _BUFFER_ID = 0;
+    __DEFINE_ERROR(MSG) { console.error(`"${MSG}" is not defined in module ${this.TYPE}!`); }
 
-    createShader(VERTEX, FRAGMENT) { console.error(`"createShader" not defined in module ${this.TYPE}!`) }
-    disposeShader(SHADER) { console.error(`"disposeShader" not defined in module ${this.TYPE}!`) }
-    useProgram(PROGRAM) { console.error(`"useProgram" not defined in module ${this.TYPE}!`) }
-    setUniform(SHADER, UNIFORM, VALUE, NO_SET_PROGRAM) {}
+    createShader(VERTEX, FRAGMENT) { this.__DEFINE_ERROR("createShader"); }
+    disposeShader(SHADER) { this.__DEFINE_ERROR("disposeShader"); }
+    useProgram(PROGRAM) { this.__DEFINE_ERROR("useProgram"); }
+    setUniform(SHADER, UNIFORM, VALUE, NO_SET_PROGRAM) { this.__DEFINE_ERROR("setUniform"); }
 
-    useZBuffer(FUNC) { console.error(`"useZBuffer" not defined in module ${this.TYPE}!`) }
-    cullFace(SIDE) { console.error(`"cullFace" not defined in module ${this.TYPE}!`) }
+    useZBuffer(FUNC) { this.__DEFINE_ERROR("useZBuffer"); }
+    useBlending(FUNC) { this.__DEFINE_ERROR("useBlending"); }
+    cullFace(SIDE) { this.__DEFINE_ERROR("cullFace"); }
 
-    renderToCanvas() { console.error(`"renderToCanvas" not defined in module ${this.TYPE}!`) }
-    createFramebuffer(WIDTH, HEIGHT, ATTACHMENTS) { console.error(`"createFramebuffer" not defined in module ${this.TYPE}!`) }
-    useFramebuffer(FRAMEBUFFER) { console.error(`"createFramebuffer" not defined in module ${this.TYPE}!`) }
-    disposeFramebuffer(FRAMEBUFFER) { console.error(`"disposeFramebuffer" not defined in module ${this.TYPE}!`) }
-    resizeFramebuffer(FRAMEBUFFER, WIDTH, HEIGHT) { console.error(`"disposeFramebuffer" not defined in module ${this.TYPE}!`) }
+    renderToCanvas() { this.__DEFINE_ERROR("renderToCanvas"); }
+    createFramebuffer(WIDTH, HEIGHT, ATTACHMENTS) { this.__DEFINE_ERROR("createFramebuffer"); }
+    useFramebuffer(FRAMEBUFFER) { this.__DEFINE_ERROR("useFramebuffer"); }
+    disposeFramebuffer(FRAMEBUFFER) { this.__DEFINE_ERROR("disposeFramebuffer"); }
+    resizeFramebuffer(FRAMEBUFFER, WIDTH, HEIGHT) { this.__DEFINE_ERROR("resizeFramebuffer"); }
 
-    createTexture(DATA, WIDTH, HEIGHT) { console.error(`"createTexture" not defined in module ${this.TYPE}!`) }
-    createTextureCube() { console.error(`"createTextureCube" not defined in module ${this.TYPE}!`) }
-    createTexture3D() { console.error(`"createTexture3D" not defined in module ${this.TYPE}!`) }
+    createTexture(DATA, WIDTH, HEIGHT) { this.__DEFINE_ERROR("createTexture"); }
+    createTextureCube() { this.__DEFINE_ERROR("createTextureCube"); }
+    createTexture3D() { this.__DEFINE_ERROR("createTexture3D"); }
+    disposeTexture(TEXTURE) { this.__DEFINE_ERROR("disposeTexture"); }
+    setFiltering(TEXTURE, NEW_FILTER, MINIMIZE) { this.__DEFINE_ERROR("setFiltering"); }
+    setWrapping(TEXTURE, WRAPPING, VERTICAL) { this.__DEFINE_ERROR("setWrapping"); }
 
-    buffersFromJSON(ATTRIBUTE_JSON) { console.error(`"buffersFromJSON" not defined in module ${this.TYPE}!`) }
-    changeBufferData(BUFFER, NEW_DATA, IS_INDICES) { console.error(`"changeBufferData" not defined in module ${this.TYPE}!`) }
-    disposeBuffer(BUFFER) { console.error(`"disposeBuffer" not defined in module ${this.TYPE}!`) };
+    buffersFromJSON(ATTRIBUTE_JSON) { this.__DEFINE_ERROR("buffersFromJSON"); }
+    modifyAttributeSet(ATTRIBUTE_SET, NEW_DATA) { this.__DEFINE_ERROR("modifyAttributeSet") }
+    disposeAttributeSet(ATTRIBUTE_SET) { this.__DEFINE_ERROR("disposeAttributeSet"); }
 
-    setBuffer(SHADER, BUFFER_NAME, BUFFER_OBJECT) { console.error(`"setBuffer" not defined in module ${this.TYPE}!`) }
-    setBufferRaw(SHADER, BUFFER_NAME, RAW_DATA) { console.error(`"setBufferRaw" not defined in module ${this.TYPE}!`) }
+    changeBufferData(BUFFER, NEW_DATA, IS_INDICES) { this.__DEFINE_ERROR("changeBufferData"); }
+    disposeBuffer(BUFFER) { this.__DEFINE_ERROR("disposeBuffer"); }
 
-    drawFromBuffers(SHADER, POINT_COUNT, RENDER_TYPE) {}
+    setBuffer(SHADER, BUFFER_NAME, BUFFER_OBJECT) { this.__DEFINE_ERROR("setBuffer"); }
+    setBufferRaw(SHADER, BUFFER_NAME, RAW_DATA) { this.__DEFINE_ERROR("setBufferRaw"); }
 
-    dispose() { delete this; }
+    drawFromBuffers(SHADER, POINT_COUNT, RENDER_TYPE) { this.__DEFINE_ERROR("drawFromBuffers"); }
 
-    viewport(X, Y, WIDTH, HEIGHT) { console.error(`"viewport" not defined in module ${this.TYPE}!`) }
-    resize(WIDTH, HEIGHT) { console.error(`"resize" not defined in module ${this.TYPE}!`) }
-    clear(TARGET) { console.error(`"clear" not defined in module ${this.TYPE}!`) }
-    flush() { console.error(`"flush" not defined in module ${this.TYPE}!`) }
+    viewport(X, Y, WIDTH, HEIGHT) { this.__DEFINE_ERROR("viewport"); }
+    resize(WIDTH, HEIGHT) { this.__DEFINE_ERROR("resize"); }
+    clear(TARGET) { this.__DEFINE_ERROR("clear"); }
+    flush() { this.__DEFINE_ERROR("flush"); }
 
-    setup(CANVAS, SETTINGS) { console.warn(`${this.TYPE} doesn't have a "setup" function. Does it exist?`) }
-    setupTextureReader(CANVAS, SETTINGS) { console.warn(`${this.TYPE} doesn't have a "setupTextureReader" function. Does it exist?`) }
-    readTexture(TEXTURE, X, Y, W, H) {}
+    dispose() {
+        //Call data disposal functions
+        while (this.SHADERS.length > 0) { this.disposeShader(this.SHADERS[0]); }
+        while (this.TEXTURES.length > 0) { this.disposeTexture(this.TEXTURES[0]); }
+        while (this.BUFFERS.length > 0) { this.disposeBuffer(this.BUFFERS[0]); }
+        while (this.ATTRIBUTE_SETS.length > 0) { this.disposeAttributeSet(this.ATTRIBUTE_SETS[0]); }
+        while (this.FRAMEBUFFERS.length > 0) { this.disposeFramebuffer(this.FRAMEBUFFERS[0]); }
+        
+        //Then remove ourselves
+        delete this;
+    }
+
+    setup(CANVAS, SETTINGS) { console.warn(`${this.TYPE} doesn't have a "setup" function. Does it exist?`); }
+    setupTextureReader(CANVAS, SETTINGS) { console.warn(`${this.TYPE} doesn't have a "setupTextureReader" function. Does it exist?`); }
+    readTexture(TEXTURE, X, Y, W, H) { console.warn(`${this.TYPE}'s "readTexture", function is not defined. Does it exist?`); }
 
     async shaderFromURL(VERTEX, FRAGMENT) {
         if (VERTEX && FRAGMENT) {
@@ -214,19 +240,8 @@ DaveShade.attributeSet = class {
     ATTRIBUTES = {};
     PARENT_MODULE = null;
 
-    dispose() {
-        for (const key in this.ATTRIBUTES) {
-            this.PARENT_MODULE.disposeBuffer(this.ATTRIBUTES[key]);
-        }
-    }
-
-    setData(NEW_DATA) {
-        for (let key in this.ATTRIBUTES) {
-            if (NEW_DATA[key]) {
-                this.PARENT_MODULE.changeBufferData(this.ATTRIBUTES[key], NEW_DATA[key]);
-            }
-        }
-    }
+    dispose() { this.disposeAttributeSet(this); }
+    setData(NEW_DATA) { this.modifyAttributeSet(this, NEW_DATA); }
 };
 
 DaveShade.framebuffer = class {
@@ -272,9 +287,16 @@ DaveShade.texture = class {
 
     PARENT_MODULE = null;
 
-    setFiltering(NEW_FILTER, MINIMIZE) {
-        this.PARENT_MODULE.setFiltering(this, NEW_FILTER, MINIMIZE);
+    setFiltering(NEW_FILTER, MINIMIZE) { this.PARENT_MODULE.setFiltering(this, NEW_FILTER, MINIMIZE); }
+    setDirectionalWrapping(WRAPPING, VERTICAL) { this.PARENT_MODULE.setWrapping(this, WRAPPING, VERTICAL); }
+    setWrapping(WRAPPING) {
+        for (let i in this.PARENT_MODULE.WRAP_DIRECTION) {
+            this.PARENT_MODULE.setWrapping(this, WRAPPING, this.PARENT_MODULE.WRAP_DIRECTION[i]);
+        }
+        
     }
+
+    dispose() { this.PARENT_MODULE.disposeTexture(this); }
 };
 
 //Now for the base webGL module
@@ -523,10 +545,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
     }
 
     disposeShader(SHADER) {
-        //*Remove the shader from the list
-        if (this.SHADERS.includes(SHADER)) {
-            this.SHADERS.splice(this.SHADERS.indexOf(SHADER), 1);
-        }
+        this._REMOVE_FROM_ARRAY(this.SHADERS, SHADER);
 
         //*Delete the program and shaders
         if (SHADER.PROGRAM) {
@@ -569,7 +588,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
                 if (FUNC) this.GL.enable(this.GL.DEPTH_TEST);
                 else this.GL.disable(this.GL.DEPTH_TEST);
 
-                this.GL.depthFunc(FUNC ? this.GL.LEQUAL : this.GL.NEVER);
+                this.GL.depthFunc(FUNC ? this.GL.DEPTH_DEFAULT : this.GL.NEVER);
                 break;
 
             case "number":
@@ -579,8 +598,32 @@ DaveShade.webGLModule = class extends DaveShade.module {
                 this.GL.depthFunc(FUNC);
                 break;
 
-            default:
+            default: break;
+        }
+    }
+
+    useBlending(FUNC) {
+        //Classic "BOOL"
+        switch (typeof FUNC) {
+            case "boolean":
+                //Enable blending and set the default    
+                if (FUNC) {
+                    this.GL.enable(this.GL.BLEND);            
+                    this.GL.blendFunc(this.GL.BLEND_DEFAULT);
+                }
+                else this.GL.disable(this.GL.BLEND);
                 break;
+
+            case "number":
+                //Disable blending, otherwise, set to func and enable
+                if (FUNC == this.BLEND_FUNC.NEVER) this.GL.disable(this.GL.BLEND);
+                else {
+                    this.GL.enable(this.GL.BLEND);
+                    this.GL.blendFunc(FUNC);
+                }
+                break;
+
+            default: break;
         }
     }
 
@@ -693,10 +736,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
         });
 
         this.GL.deleteFramebuffer(FRAMEBUFFER.FBO);
-
-        if (this.FRAMEBUFFERS.includes(FRAMEBUFFER)) {
-            this.FRAMEBUFFERS.splice(this.FRAMEBUFFERS.indexOf(FRAMEBUFFER), 1);
-        }
+        this._REMOVE_FROM_ARRAY(this.FRAMEBUFFERS, FRAMEBUFFER);
     }
 
     resizeFramebuffer(FRAMEBUFFER, WIDTH, HEIGHT) {
@@ -738,6 +778,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
         returnedTextureOBJ.WIDTH = WIDTH;
         returnedTextureOBJ.HEIGHT = HEIGHT;
 
+        this.TEXTURES.push(returnedTextureOBJ);
         return returnedTextureOBJ;
     }
 
@@ -780,6 +821,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
         returnedTextureOBJ.SIZES = sizes;
         returnedTextureOBJ.PARENT_MODULE = this;
 
+        this.TEXTURES.push(returnedTextureOBJ);
         return returnedTextureOBJ;
     }
 
@@ -821,7 +863,13 @@ DaveShade.webGLModule = class extends DaveShade.module {
         returnedTextureOBJ.HEIGHT = HEIGHT;
         returnedTextureOBJ.DEPTH = DEPTH;
 
+        this.TEXTURES.push(returnedTextureOBJ);
         return returnedTextureOBJ;
+    }
+
+    disposeTexture(TEXTURE) {
+        this._REMOVE_FROM_ARRAY(this.TEXTURES, TEXTURE);
+        this.GL.deleteTexture(TEXTURE.TEXTURE);
     }
 
     setFiltering(TEXTURE, NEW_FILTER, MINIMIZE) {
@@ -833,6 +881,28 @@ DaveShade.webGLModule = class extends DaveShade.module {
         else this.GL.texParameteri(TEXTURE.GL_IDENTIFIER, this.GL.TEXTURE_MAG_FILTER, NEW_FILTER);
     }
 
+    setWrapping(TEXTURE, WRAPPING, DIRECTION) {
+        DIRECTION = DIRECTION || 0;
+
+        this.GL.bindTexture(TEXTURE.GL_IDENTIFIER, TEXTURE.TEXTURE);
+
+        switch (DIRECTION) {
+            //2D ones
+            case this.WRAP_DIRECTION.X: this.GL.texParameteri(TEXTURE.GL_IDENTIFIER, this.GL.TEXTURE_WRAP_S, WRAPPING); break;
+            case this.WRAP_DIRECTION.Y: this.GL.texParameteri(TEXTURE.GL_IDENTIFIER, this.GL.TEXTURE_WRAP_T, WRAPPING); break;
+
+            //The 3d one, make sure the texture is 3d first
+            case this.WRAP_DIRECTION.Z:
+                if (TEXTURE.TYPE == "TEXTURE3D") this.GL.texParameteri(TEXTURE.GL_IDENTIFIER, this.GL.TEXTURE_WRAP_R, WRAPPING);
+                break;
+
+            default: break;
+        
+        }
+        if (VERTICAL) this.GL.texParameteri(TEXTURE.GL_IDENTIFIER,)
+    }
+
+    //Attribute set stuff
     buffersFromJSON(ATTRIBUTE_JSON) {
         //Check initial typing before continuing, ensures compatibility with every old, and new DS3 version.
         const inputType = typeof ATTRIBUTE_JSON;
@@ -857,34 +927,60 @@ DaveShade.webGLModule = class extends DaveShade.module {
 
         //Loop through the keys converting each one
         for (const key in ATTRIBUTE_JSON) {
-            //Increment our ID
-            this._BUFFER_ID++;
-
-            let element = ATTRIBUTE_JSON[key];
-            const buffer = this.GL.createBuffer();
-            buffer.bufferID = this._BUFFER_ID;
-
-            //If we have indicies use indicies
-            if (key == DaveShade.INDICE_IDENTIFIER) {
-                //Convert if we just have a base array
-                if (Array.isArray(element)) element = new Int32Array(element.flat(4));
-
-                this.GL.bindBuffer(this.GL.ELEMENT_ARRAY_BUFFER, buffer);
-                this.GL.bufferData(this.GL.ELEMENT_ARRAY_BUFFER, element, this.GL.STATIC_DRAW);
-            } else {
-                //Convert if we just have a base array
-                if (Array.isArray(element)) element = new Float32Array(element.flat(4));
-
-                this.GL.bindBuffer(this.GL.ARRAY_BUFFER, buffer);
-                this.GL.bufferData(this.GL.ARRAY_BUFFER, element, this.GL.STATIC_DRAW);
-            }
-
-            //Set the key in the buffer
-            returned.ATTRIBUTES[key] = buffer;
+            returned.ATTRIBUTES[key] = this.createBufferData(ATTRIBUTE_JSON[key], key == DaveShade.INDICE_IDENTIFIER);
         }
 
-        this.BUFFERS.push(returned);
+        this.ATTRIBUTE_SETS.push(returned);
         return returned;
+    }
+
+    modifyAttributeSet(ATTRIBUTE_SET, NEW_DATA) {
+        if (!(ATTRIBUTE_SET instanceof DaveShade.attributeSet)) {
+            console.error("Tried to dispose of an object that wasn't an attribute set through \"disposeAttributeSet\".");
+            return;
+        }
+
+        for (let key in ATTRIBUTE_SET.ATTRIBUTES) {
+            if (NEW_DATA[key]) this.changeBufferData(ATTRIBUTE_SET.ATTRIBUTES[key], NEW_DATA[key]);
+        }
+    }
+
+    disposeAttributeSet(ATTRIBUTE_SET) {
+        if (!(ATTRIBUTE_SET instanceof DaveShade.attributeSet)) {
+            console.error("Tried to dispose of an object that wasn't an attribute set through \"disposeAttributeSet\".");
+            return;
+        }
+
+        //Just quickly dispose of the attribute buffers
+        for (const key in ATTRIBUTE_SET.ATTRIBUTES) { this.disposeBuffer(ATTRIBUTE_SET.ATTRIBUTES[key]); }
+        this._REMOVE_FROM_ARRAY(this.ATTRIBUTE_SETS, ATTRIBUTE_SET);
+    }
+
+    //Buffer stuff
+    createBufferData(DATA, IS_INDICES) {
+        //Increment our ID
+        this._BUFFER_ID++;
+
+        const buffer = this.GL.createBuffer();
+        buffer.bufferID = this._BUFFER_ID;
+
+        //If we have indicies use indicies
+        if (IS_INDICES) {
+            //Convert if we just have a base array, also flatten it.
+            if (Array.isArray(DATA)) DATA = new Int32Array(DATA.flat(4));
+
+            this.GL.bindBuffer(this.GL.ELEMENT_ARRAY_BUFFER, buffer);
+            this.GL.bufferData(this.GL.ELEMENT_ARRAY_BUFFER, DATA, this.GL.STATIC_DRAW);
+        } else {
+            //Convert if we just have a base array, also flatten it.
+            if (Array.isArray(DATA)) DATA = new Float32Array(DATA.flat(4));
+
+            this.GL.bindBuffer(this.GL.ARRAY_BUFFER, buffer);
+            this.GL.bufferData(this.GL.ARRAY_BUFFER, DATA, this.GL.STATIC_DRAW);
+        }
+
+        this.BUFFERS.push(buffer);
+        return buffer;
     }
 
     changeBufferData(BUFFER, NEW_DATA, IS_INDICES) {
@@ -904,9 +1000,12 @@ DaveShade.webGLModule = class extends DaveShade.module {
         }
     }
 
-    // prettier-ignore
-    disposeBuffer(BUFFER) { this.GL.deleteBuffer(BUFFER); }
+    disposeBuffer(BUFFER) { 
+        this._REMOVE_FROM_ARRAY(this.BUFFERS, BUFFER);
+        this.GL.deleteBuffer(BUFFER);
+    }
 
+    //Setting
     setBuffer(SHADER, BUFFER_NAME, BUFFER_OBJECT) {
         //Grab relevant info
         const attributeInfo = SHADER.ATTRIBUTES[BUFFER_NAME];
@@ -1025,8 +1124,8 @@ DaveShade.webGLModule = class extends DaveShade.module {
         this.BLEND_FUNC.SRC_ALPHA_SATURATE = this.GL.SRC_ALPHA_SATURATE;
 
         //Set defaults for depth and blend functions
-        this.DEPTH_DEFAULT = this.DEPTH_FUNC.NEVER;
-        this.BLEND_DEFAULT = this.BLEND_FUNC.NEVER;
+        this.DEPTH_DEFAULT = this.DEPTH_FUNC.LEQUAL;
+        this.BLEND_DEFAULT = this.BLEND_FUNC.INV_SRC_ALPHA;
 
         //Types
 
@@ -1137,7 +1236,12 @@ DaveShade.webGLModule = class extends DaveShade.module {
             this.GL.TEXTURE_CUBE_MAP_NEGATIVE_X,
             this.GL.TEXTURE_CUBE_MAP_NEGATIVE_Y,
             this.GL.TEXTURE_CUBE_MAP_NEGATIVE_Z
-        ]
+        ];
+
+        //Set wrap directions
+        this.WRAP_DIRECTION.X = 0;
+        this.WRAP_DIRECTION.Y = 1;
+        this.WRAP_DIRECTION.Z = 2;
 
         //Filtering modes
         this.FILTERING.LINEAR = this.GL.LINEAR;
