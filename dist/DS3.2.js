@@ -603,28 +603,17 @@ DaveShade.webGLModule = class extends DaveShade.module {
         }
     }
 
-    useBlending(FUNC) {
-        //Classic "BOOL"
-        switch (typeof FUNC) {
-            case "boolean":
-                //Enable blending and set the default    
-                if (FUNC) {
-                    this.GL.enable(this.GL.BLEND);            
-                    this.GL.blendFunc(this.GL.BLEND_DEFAULT);
-                }
-                else this.GL.disable(this.GL.BLEND);
-                break;
+    useBlending(S_FUNC, D_FUNC) {
+        S_FUNC = S_FUNC || this.BLEND_DEFAULT_S;
+        D_FUNC = D_FUNC || this.BLEND_DEFAULT_D;
 
-            case "number":
-                //Disable blending, otherwise, set to func and enable
-                if (FUNC == this.BLEND_FUNC.NEVER) this.GL.disable(this.GL.BLEND);
-                else {
-                    this.GL.enable(this.GL.BLEND);
-                    this.GL.blendFunc(FUNC);
-                }
-                break;
-
-            default: break;
+        if (
+            S_FUNC == this.BLEND_FUNC.NEVER ||
+            D_FUNC == this.BLEND_FUNC.NEVER
+        ) this.GL.disable(this.GL.BLEND);
+        else {
+            this.GL.enable(this.GL.BLEND);
+            this.GL.blendFunc(S_FUNC, D_FUNC);
         }
     }
 
@@ -1126,7 +1115,8 @@ DaveShade.webGLModule = class extends DaveShade.module {
 
         //Set defaults for depth and blend functions
         this.DEPTH_DEFAULT = this.DEPTH_FUNC.LEQUAL;
-        this.BLEND_DEFAULT = this.BLEND_FUNC.INV_SRC_ALPHA;
+        this.BLEND_DEFAULT_S = this.BLEND_FUNC.ONE;
+        this.BLEND_DEFAULT_D = this.BLEND_FUNC.INV_SRC_ALPHA;
 
         //Types
 

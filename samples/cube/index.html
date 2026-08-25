@@ -3,26 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Triangle</title>
+    <title>Cube</title>
+    <link rel="stylesheet" href="../samplePage.css"></link>
 </head>
 <body>
     <canvas id="canvas" width="480" height="360"></canvas>
+    <div class="info">
+        <p>This demonstrates basic 3D, note that a matrix library is not used in this demo.</p>
+        <p>You can find the source code <a href="main.js">here</a></p>
+    </div>
     <script src="../../dist/DS3.2.js"></script> <!-- Replace this with wherever your DaveShade distribution is-->
     <script src="main.js"></script>
-    <style>
-        canvas {
-            position: absolute;
-
-            /* Position */
-            top: 0%;
-            left: 50%;
-
-            transform: translate(-50%, 0%);
-
-            /* Resize */
-            aspect-ratio: 4/3;
-            height: 100%;
-        }
-    </style>
 </body>
 </html>

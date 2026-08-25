@@ -1,0 +1,31 @@
+body { background: #d1f1d8; color: #b1ffd1; }
+a { color: #00ffea; }
+p { margin: 4px; }
+
+canvas {
+    position: absolute;
+
+    /* Position */
+    top: 0%;
+    left: 50%;
+
+    transform: translate(-50%, 0%);
+    image-rendering: pixelated;
+    filter: blur(0px);
+
+    /* Resize */
+    aspect-ratio: 4/3;
+    height: 100%;
+    z-index: -1;
+}
+
+.info {
+    background: #00000090;
+    backdrop-filter: blur(8px);
+    max-width: min(600px, 100vw);
+
+    padding: 8px;
+    margin: 4px;
+
+    border-radius: 8px;
+}

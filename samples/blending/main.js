@@ -2,18 +2,20 @@ const canvas = document.getElementById("canvas");
 const instance = DaveShade.createInstance(canvas);
 
 const colourShader = instance.createShader(`
-attribute highp vec4 a_position;
-attribute highp vec3 a_colour;
+attribute mediump vec4 a_position;
 
-varying highp vec3 v_colour;
+uniform mediump vec2 u_offset;
+uniform mediump vec4 u_color;
 
 void vertex() {
-	gl_Position = a_position;
-    v_colour = a_colour;
+	gl_Position = a_position + vec4(u_offset, 0, 0);
 }
 
 void fragment() {
-    gl_FragColor = vec4(v_colour, 1);
+    gl_FragColor = u_color;
+
+    //Multiplicative blending
+    gl_FragColor.xyz *= gl_FragColor.w;
 }
 `);
 
@@ -22,14 +24,23 @@ const triangleBuffers = instance.buffersFromJSON({
 		0,0.5,0,1,
 		0.5,-0.5,0,1,
 		-0.5,-0.5,0,1
-	],
-    a_colour: [
-        1,1,0,
-        0,1,1,
-        1,0,1
-    ]
+	]
 });
 
-//Draw our triangle
+//Turn on blending
+instance.useBlending();
+
+//Draw our triangles
 colourShader.setBuffers(triangleBuffers);
+
+colourShader.setUniforms({
+    u_offset: [-0.25, 0],
+    u_color: [1, 0, 0, 1]
+});
+colourShader.drawFromBuffers(3);
+
+colourShader.setUniforms({
+    u_offset: [0.25, 0],
+    u_color: [0, 0, 1, 0.25]
+});
 colourShader.drawFromBuffers(3);

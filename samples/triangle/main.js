@@ -2,10 +2,10 @@ const canvas = document.getElementById("canvas");
 const instance = DaveShade.createInstance(canvas);
 
 const colourShader = instance.createShader(`
-attribute highp vec4 a_position;
-attribute highp vec3 a_colour;
+attribute mediump vec4 a_position;
+attribute mediump vec3 a_colour;
 
-varying highp vec3 v_colour;
+varying mediump vec3 v_colour;
 
 void vertex() {
 	gl_Position = a_position;
