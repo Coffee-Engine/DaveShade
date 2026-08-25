@@ -59,6 +59,7 @@ DaveShade.module = class {
     SETTERS = {};
     SIDE = {};
     FILTERING = {};
+    WRAP_TYPE = {};
     RENDERBUFFER_TYPE = {};
     CUBEMAP_ORDER = [];
     WRAP_DIRECTION = {};
@@ -1246,6 +1247,11 @@ DaveShade.webGLModule = class extends DaveShade.module {
         //Filtering modes
         this.FILTERING.LINEAR = this.GL.LINEAR;
         this.FILTERING.NEAREST = this.GL.NEAREST;
+
+        //Wrapping modes
+        this.WRAP_TYPE.REPEAT = this.GL.REPEAT;
+        this.WRAP_TYPE.CLAMP = this.GL.CLAMP_TO_EDGE;
+        this.WRAP_TYPE.MIRRORED = this.GL.MIRRORED_REPEAT;
     }
 
     setupTextureReader(CANVAS, SETTINGS) {
