@@ -1,6 +1,15 @@
-body { background: #d1f1d8; color: #b1ffd1; }
+body { background: #738577; color: #b1ffd1; }
 a { color: #00ffea; }
 p { margin: 4px; }
+
+code {
+    font-weight: bolder;
+    
+    background-color: #1f1212c5;
+    border-radius: 2px;
+
+    padding: 4px;
+}
 
 canvas {
     position: absolute;
@@ -25,7 +34,14 @@ canvas {
     max-width: min(600px, 100vw);
 
     padding: 8px;
-    margin: 4px;
+    margin: 4px 4px 4px 50%;
 
     border-radius: 8px;
+
+    transform: translate(-50%, 0%);
+}
+
+.keynote {
+    opacity: 50%;
+    font-size: small;
 }
