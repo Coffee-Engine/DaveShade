@@ -67,6 +67,8 @@ DaveShade.module = class {
     DEPTH_FUNC = {};
     BLEND_FUNC = {};
 
+    USING_INDICES = false;
+
     get SUPPORTED() { return true; }
     get PRIORITY() { return 1; }
     get TYPE() { return "GENERIC"; };
@@ -169,7 +171,6 @@ DaveShade.shader = class {
     FRAGMENT = {};
     PROGRAM = null;
     PARENT_MODULE = null;
-    USING_INDICES = null;
 
     UNIFORM_INDICIES = [];
     ACTIVE_UNIFORMS = {};
@@ -210,23 +211,32 @@ DaveShade.shader = class {
     }
 
     setBuffers(BUFFER_OBJECT) {
+        this.PARENT_MODULE.USING_INDICES = false;
+
         //Just in-case
         if (!(BUFFER_OBJECT instanceof DaveShade.attributeSet)) {
             this.setBufferRaw(BUFFER_OBJECT);
             return;
         }
 
-        for (let key in BUFFER_OBJECT.ATTRIBUTES) {
-            if (!this.ATTRIBUTES[key]) continue;
+        for (let i = 0; i < BUFFER_OBJECT.KEYS.length; i++) {
+            const key = BUFFER_OBJECT.KEYS[i];
+            if (!(this.ATTRIBUTES[key] || key == DaveShade.INDICE_IDENTIFIER)) continue;
 
+            if (key == DaveShade.INDICE_IDENTIFIER) this.PARENT_MODULE.USING_INDICES = true;
             this.PARENT_MODULE.setBuffer(this, key, BUFFER_OBJECT.ATTRIBUTES[key]);
         }
     }
 
-    setBufferRaw(RAW_DATA) {
-        for (let key in RAW_DATA) {
-            if (!this.ATTRIBUTES[key]) continue;
+    setBuffersRaw(RAW_DATA) {
+        this.PARENT_MODULE.USING_INDICES = false;
 
+        const keys = Object.keys(RAW_DATA);
+        for (let i = 0; i < keys; i++) {
+            const key = keys[i];
+            if (!(this.ATTRIBUTES[key] || key == DaveShade.INDICE_IDENTIFIER)) continue;
+
+            if (key == DaveShade.INDICE_IDENTIFIER) this.PARENT_MODULE.USING_INDICES = true;
             this.PARENT_MODULE.setBufferRaw(this, key, RAW_DATA[key]);
         }
     }
@@ -239,10 +249,11 @@ DaveShade.shader = class {
 DaveShade.attributeSet = class {
     //Simple one-liner.
     ATTRIBUTES = {};
+    KEYS = [];
     PARENT_MODULE = null;
 
-    dispose() { this.disposeAttributeSet(this); }
-    setData(NEW_DATA) { this.modifyAttributeSet(this, NEW_DATA); }
+    dispose() { this.PARENT_MODULE.disposeAttributeSet(this); }
+    setData(NEW_DATA) { this.PARENT_MODULE.modifyAttributeSet(this, NEW_DATA); }
 };
 
 DaveShade.framebuffer = class {
@@ -589,7 +600,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
                 if (FUNC) this.GL.enable(this.GL.DEPTH_TEST);
                 else this.GL.disable(this.GL.DEPTH_TEST);
 
-                this.GL.depthFunc(FUNC ? this.GL.DEPTH_DEFAULT : this.GL.NEVER);
+                this.GL.depthFunc(FUNC ? this.DEPTH_DEFAULT : this.GL.NEVER);
                 break;
 
             case "number":
@@ -918,6 +929,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
         //Loop through the keys converting each one
         for (const key in ATTRIBUTE_JSON) {
             returned.ATTRIBUTES[key] = this.createBufferData(ATTRIBUTE_JSON[key], key == DaveShade.INDICE_IDENTIFIER);
+            returned.KEYS.push(key);
         }
 
         this.ATTRIBUTE_SETS.push(returned);
@@ -998,23 +1010,34 @@ DaveShade.webGLModule = class extends DaveShade.module {
     //Setting
     setBuffer(SHADER, BUFFER_NAME, BUFFER_OBJECT) {
         //Grab relevant info
-        const attributeInfo = SHADER.ATTRIBUTES[BUFFER_NAME];
+        const attributeInfo = SHADER.ATTRIBUTES[BUFFER_NAME] || { location: -1, divisions: 1 };
 
         //Update info if needed
-        if (this.ATTRIBUTE_BINDINGS[attributeInfo.location] == BUFFER_OBJECT.bufferID) return;
-        this.ATTRIBUTE_BINDINGS[attributeInfo.location] =BUFFER_OBJECT.bufferID;
-        this.GL.bindBuffer(this.GL.ARRAY_BUFFER, BUFFER_OBJECT);
-        this.GL.vertexAttribPointer(attributeInfo.location, attributeInfo.divisions, this.GL.FLOAT, false, 0, 0);
+        if (this.ATTRIBUTE_BINDINGS[attributeInfo.location] == BUFFER_OBJECT.bufferID) return;        
+        this.ATTRIBUTE_BINDINGS[attributeInfo.location] = BUFFER_OBJECT.bufferID;
+
+        if (BUFFER_NAME == DaveShade.INDICE_IDENTIFIER) this.GL.bindBuffer(this.GL.ELEMENT_ARRAY_BUFFER, BUFFER_OBJECT);
+        else {
+            this.GL.bindBuffer(this.GL.ARRAY_BUFFER, BUFFER_OBJECT);
+            this.GL.vertexAttribPointer(attributeInfo.location, attributeInfo.divisions, this.GL.FLOAT, false, 0, 0);
+        }
     }
 
     setBufferRaw(SHADER, BUFFER_NAME, RAW_DATA) {
         //Grab relevant info
-        const attributeInfo = SHADER.ATTRIBUTES[BUFFER_NAME];
+        const attributeInfo = SHADER.ATTRIBUTES[BUFFER_NAME] || { location: -1, divisions: 1 };
 
         this.ATTRIBUTE_BINDINGS[attributeInfo.location] = 0;
-        this.GL.bindBuffer(this.GL.ARRAY_BUFFER, attributeInfo.buffer);
-        this.GL.bufferData(this.GL.ARRAY_BUFFER, RAW_DATA, this.GL.STATIC_DRAW);
-        this.GL.vertexAttribPointer(attributeInfo.location, attributeInfo.divisions, this.GL.FLOAT, false, 0, 0);
+
+        if (BUFFER_NAME == DaveShade.INDICE_IDENTIFIER) {
+            this.GL.bindBuffer(this.GL.ELEMENT_ARRAY_BUFFER, attributeInfo.buffer);
+            this.GL.bufferData(this.GL.ELEMENT_ARRAY_BUFFER, RAW_DATA, this.GL.STATIC_DRAW);
+        }
+        else {
+            this.GL.bindBuffer(this.GL.ARRAY_BUFFER, attributeInfo.buffer);
+            this.GL.bufferData(this.GL.ARRAY_BUFFER, RAW_DATA, this.GL.STATIC_DRAW);
+            this.GL.vertexAttribPointer(attributeInfo.location, attributeInfo.divisions, this.GL.FLOAT, false, 0, 0);
+        }
     }
 
     drawFromBuffers(SHADER, POINT_COUNT, RENDER_TYPE) {
@@ -1022,7 +1045,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
         SHADER.use();
 
         //Draw using indicies if we are using indicies
-        if (!this.USING_INDICIES) this.GL.drawArrays(RENDER_TYPE || this.GL.TRIANGLES, 0, POINT_COUNT);
+        if (!this.USING_INDICES) this.GL.drawArrays(RENDER_TYPE || this.GL.TRIANGLES, 0, POINT_COUNT);
         else this.GL.drawElements(RENDER_TYPE || this.GL.TRIANGLES, POINT_COUNT, this.GL.UNSIGNED_INT, 0);
 
         //Increment drawn tri count
