@@ -6,7 +6,7 @@
 
 <h2>Getting Started</h2>
 
-<p>To get started get the latest version from <code>dist/DS3.js</code> and drop it into your project. After that you should be good to add the script to your main HTML file.</p>
+<p>To get started get the latest version from <code>dist/DS3.2.js</code> and drop it into your project. After that you should be good to add the script to your main HTML file.</p>
 
 <p>Once DaveShade is added you can create an instance like this,</p>
 
