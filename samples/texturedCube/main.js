@@ -7,7 +7,7 @@
         [ROLL SIN, ROLL COS, Z],
     ]
 
-    Go to Line 141 for the actual texture loading code, or just search "Load the texture from the url"
+    Go to Line 154 for the actual texture loading code, or just search "Load the texture from the url"
 */
 
 const canvas = document.getElementById("canvas");
@@ -17,11 +17,14 @@ let texture = null;
 const colourShader = instance.createShader(`
 attribute mediump vec3 a_position;
 attribute mediump vec3 a_colour;
+attribute lowp vec2 a_texcoord;
 
 varying mediump vec3 v_colour;
+varying lowp vec2 v_texcoord;
 
 uniform mediump mat3 u_transform;
 uniform mediump float u_aspect;
+uniform sampler2D u_texture;
 
 void vertex() {
     vec3 calc = a_position;
@@ -49,11 +52,12 @@ void vertex() {
 	
     //Now send to the fragment
     gl_Position = vec4(calc - vec3(0, 0, 1), calc.z) / vec4(u_aspect, 1, 1, 1);
+    v_texcoord = a_texcoord;
     v_colour = a_colour;
 }
 
 void fragment() {
-    gl_FragColor = vec4(v_colour, 1);
+    gl_FragColor = texture2D(u_texture, v_texcoord) * vec4(v_colour, 1);
 }
 `);
 
@@ -97,13 +101,22 @@ const triangleBuffers = instance.buffersFromJSON({
 		0.5,0.5,0.5
 	],
 
+    a_texcoord: [
+        0, 0,  1, 1,  0, 1,  1, 0, //Front
+        1, 0,  0, 1,  1, 1,  0, 0, //Back
+        0, 0,  1, 1,  0, 1,  1, 0, //Left
+        1, 0,  0, 1,  1, 1,  0, 0, //Right
+        0, 0,  1, 1,  0, 1,  1, 0, //Bottom
+        1, 0,  0, 1,  1, 1,  0, 0 //Top
+    ],
+
     a_colour: [
-        1,1,0,  1,1,0,  1,1,0,  1,1,0, //Front
-        0,0,1,  0,0,1,  0,0,1,  0,0,1, //Back
-        0,1,1,  0,1,1,  0,1,1,  0,1,1, //Left
-        1,0,0,  1,0,0,  1,0,0,  1,0,0, //Right
-        1,0,1,  1,0,1,  1,0,1,  1,0,1, //Bottom
-        0,1,0,  0,1,0,  0,1,0,  0,1,0  //Top
+        1  ,1  ,0.5,  1  ,1  ,0.5,  1  ,1  ,0.5,  1  ,1  ,0.5, //Front
+        0.5,0.5,1  ,  0.5,0.5,1  ,  0.5,0.5,1  ,  0.5,0.5,1  , //Back
+        0.5,1  ,1  ,  0.5,1  ,1  ,  0.5,1  ,1  ,  0.5,1  ,1  , //Left
+        1  ,0.5,0.5,  1  ,0.5,0.5,  1  ,0.5,0.5,  1  ,0.5,0.5, //Right
+        1  ,0.5,1  ,  1  ,0.5,1  ,  1  ,0.5,1  ,  1  ,0.5,1  , //Bottom
+        0.5,1  ,0.5,  0.5,1  ,0.5,  0.5,1  ,0.5,  0.5,1  ,0.5  //Top
     ],
 
     __INDICIES__: [
