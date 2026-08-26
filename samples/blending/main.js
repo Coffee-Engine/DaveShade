@@ -55,7 +55,7 @@ const loop = () => {
 
     //Draw the transparent one
     colourShader.setUniforms({
-        u_offset: [Math.sin(Date.now() / 500) * 0.5, 0],
+        u_offset: [Math.sin(Date.now() / 1000) * 0.5, 0],
         u_color: [0, 0, 0, 0.5]
     });
     colourShader.drawFromBuffers(3);
