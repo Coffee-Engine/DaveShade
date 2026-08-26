@@ -104,8 +104,8 @@ const triangleBuffers = instance.buffersFromJSON({
     a_texcoord: [
         0, 0,  1, 1,  0, 1,  1, 0, //Front
         1, 0,  0, 1,  1, 1,  0, 0, //Back
-        0, 0,  1, 1,  0, 1,  1, 0, //Left
-        1, 0,  0, 1,  1, 1,  0, 0, //Right
+        1, 0,  0, 1,  1, 1,  0, 0, //Left
+        0, 0,  1, 1,  0, 1,  1, 0, //Right
         0, 0,  1, 1,  0, 1,  1, 0, //Bottom
         1, 0,  0, 1,  1, 1,  0, 0 //Top
     ],

@@ -41,7 +41,7 @@ const triangleBuffers = instance.buffersFromJSON({
 //Turn on blending
 instance.useBlending();
 
-
+//Start our loop
 const loop = () => {
     //Draw our triangles
     colourShader.setBuffers(triangleBuffers);
