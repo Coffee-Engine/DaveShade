@@ -110,6 +110,7 @@ const triangleBuffers = instance.buffersFromJSON({
         1, 0,  0, 1,  1, 1,  0, 0 //Top
     ],
 
+    //In a range from 0.5-1 to show colours of texture better
     a_colour: [
         1  ,1  ,0.5,  1  ,1  ,0.5,  1  ,1  ,0.5,  1  ,1  ,0.5, //Front
         0.5,0.5,1  ,  0.5,0.5,1  ,  0.5,0.5,1  ,  0.5,0.5,1  , //Back
