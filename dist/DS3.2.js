@@ -27,7 +27,7 @@
 window.DaveShade = {
     MODULES: [],
     INDICE_IDENTIFIER: "__INDICIES__",
-    VERSION: "3.1",
+    VERSION: "3.2",
 };
 
 //Module Creation
