@@ -18,6 +18,7 @@ attribute mediump vec3 a_colour;
 varying mediump vec3 v_colour;
 
 uniform mediump mat3 u_transform;
+uniform mediump float u_aspect;
 
 void vertex() {
     vec3 calc = a_position;
@@ -44,7 +45,7 @@ void vertex() {
     calc += vec3(u_transform[0][2], u_transform[1][2], u_transform[2][2]);
 	
     //Now send to the fragment
-    gl_Position = vec4(calc - vec3(0, 0, 1), calc.z);
+    gl_Position = vec4(calc - vec3(0, 0, 1), calc.z) / vec4(u_aspect, 1, 1, 1);
     v_colour = a_colour;
 }
 
@@ -92,7 +93,7 @@ const triangleBuffers = instance.buffersFromJSON({
 		-0.5,0.5,-0.5,
 		0.5,0.5,0.5
 	],
-    
+
     a_colour: [
         1,1,0,  1,1,0,  1,1,0,  1,1,0, //Front
         0,0,1,  0,0,1,  0,0,1,  0,0,1, //Back
@@ -124,8 +125,9 @@ const loop = () => {
         u_transform: [
             Math.cos(now), Math.sin(now), 0,
             Math.sin(now / 3), Math.cos(now / 3), 0,
-            1, 0, 1.5,
-        ]
+            Math.sin(now / 5), Math.cos(now / 5), 1.5,
+        ],
+        u_aspect: 4/3 //Just going to make the cube stay a cube.
     });
 
     colourShader.drawFromBuffers(36);
