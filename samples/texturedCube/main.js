@@ -7,14 +7,14 @@
         [ROLL SIN, ROLL COS, Z],
     ]
 
-    Go to Line 154 for the actual texture loading code, or just search "Load the texture from the url"
+    Go to Line 155 for the actual texture loading code, or just search "Load the texture from the url"
 */
 
 const canvas = document.getElementById("canvas");
 const instance = DaveShade.createInstance(canvas);
 let texture = null;
 
-const colourShader = instance.createShader(`
+const cubeShader = instance.createShader(`
 attribute mediump vec3 a_position;
 attribute mediump vec3 a_colour;
 attribute lowp vec2 a_texcoord;
@@ -137,8 +137,8 @@ instance.useZBuffer(true);
 const loop = () => {
     const now = Date.now() / 1000;
 
-    colourShader.setBuffers(triangleBuffers);
-    colourShader.setUniforms({
+    cubeShader.setBuffers(triangleBuffers);
+    cubeShader.setUniforms({
         u_transform: [
             Math.cos(now), Math.sin(now), 0,
             Math.sin(now / 3), Math.cos(now / 3), 0,
@@ -148,7 +148,7 @@ const loop = () => {
         u_texture: texture
     });
 
-    colourShader.drawFromBuffers(36);
+    cubeShader.drawFromBuffers(36);
     requestAnimationFrame(loop);
 }
 

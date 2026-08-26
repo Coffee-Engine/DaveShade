@@ -302,6 +302,7 @@ DaveShade.framebuffer = class {
 DaveShade.texture = class {
     TEXTURE = null;
     get texture() { return this.TEXTURE; }
+    get _UNIFORM_VALUE_() { return this.TEXTURE; }
 
     TYPE = "TEXTURE2D";
 
@@ -592,8 +593,8 @@ DaveShade.webGLModule = class extends DaveShade.module {
     useProgram(PROGRAM) { this.GL.useProgram(PROGRAM); }
 
     setUniform(SHADER, UNIFORM, VALUE, NO_SET_PROGRAM) {
-        //If we are a texture extract the texture
-        if (VALUE instanceof DaveShade.texture) VALUE = VALUE.texture;
+        //If we have a _UNIFORM_VALUE_ use that.
+        if (VALUE._UNIFORM_VALUE_) VALUE = VALUE._UNIFORM_VALUE_;
 
         //Check uniform info and set appropriately
         const uniformInfo = SHADER.UNIFORMS[UNIFORM];

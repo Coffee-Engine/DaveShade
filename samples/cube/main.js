@@ -11,7 +11,7 @@
 const canvas = document.getElementById("canvas");
 const instance = DaveShade.createInstance(canvas);
 
-const colourShader = instance.createShader(`
+const cubeShader = instance.createShader(`
 attribute mediump vec3 a_position;
 attribute mediump vec3 a_colour;
 
@@ -120,8 +120,8 @@ instance.useZBuffer(true);
 const loop = () => {
     const now = Date.now() / 1000;
 
-    colourShader.setBuffers(triangleBuffers);
-    colourShader.setUniforms({
+    cubeShader.setBuffers(triangleBuffers);
+    cubeShader.setUniforms({
         u_transform: [
             Math.cos(now), Math.sin(now), 0,
             Math.sin(now / 3), Math.cos(now / 3), 0,
@@ -130,7 +130,7 @@ const loop = () => {
         u_aspect: 4/3 //Just going to make the cube stay a cube.
     });
 
-    colourShader.drawFromBuffers(36);
+    cubeShader.drawFromBuffers(36);
     requestAnimationFrame(loop);
 }
 
