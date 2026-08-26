@@ -9,15 +9,33 @@
 <body>
     <canvas id="test"></canvas>
     <div class="main">
-        <h1>DaveShade</h1>
-        <h2>A fast cross-api graphics layer.</h2>
-        <p>DaveShade is made to make development of graphical web applications faster through easy access to any underlying graphics library the browser may have.</p>
-        <p>A demo can be seen in the backdrop of this page! The <a href="samples/triangle">hello world</a> is here.</p>
-        <p>DaveShade by default comes with a WebGL module and a base module that can be extended.</p>
-        <p>To get started grab the <a href="dist/DS3.1.js">latest version</a>, and run <code>DaveShade.createInstance(canvas)</code></p>
+        <img src="github/Logo.svg"></img>
+        <h2>A <span class="italian">fast cross-api</span> graphics layer.</h2>
+        <p>
+            DaveShade is made to make development of graphical web applications faster,
+            through easy access to any underlying graphics library the browser may have.
+            This is done through a module that contains multiple functions that allows
+            the developer to interact with any* graphics library.
+        </p>
+        <p class="italian" style="margin-top: 0px">*That has a module</span></p>
+        <p>
+            By default it comes with a WebGL and a Base module,
+            the base module exists for the purpose of extensibility.
+        </p>
+        <p>Fun-Fact, the background of this page is rendered with DaveShade!</p>
+        <p>To get started grab the <a href="dist/DS3.2.js">latest version</a>, and run <code>DaveShade.createInstance(canvas)</code></p>
+        <h3>Samples</h3>
+        <ul>
+            <li><a href="samples/triangle">Hello World</a></li>
+            <li><a href="samples/blending">Blending</a></li>
+            <li><a href="samples/textures">Textures</a></li>
+            <l1><hr></l1>
+            <li><a href="samples/cube">Cube</a></li>
+            <li><a href="samples/texturedCube">Textured Cube</a></li>
+        </ul>
     </div>
     <script> window.mainCanvas = document.getElementById("test"); </script>
-    <script src="dist/DS3.1.js"></script>
+    <script src="dist/DS3.2.js"></script>
     <script src="homepage/script.js"></script>
 </body>
 </html>

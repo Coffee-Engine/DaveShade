@@ -1,3 +1,7 @@
+//Warning!
+//This code was originally made for Pen+ and adapted into a DaveShade GLSL shader
+//Expect some weirdness
+
 precision highp float;
 
 attribute vec2 a_position;

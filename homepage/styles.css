@@ -4,14 +4,27 @@ body {
 }
 
 canvas {
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
 
-    position: absolute;
+    position: fixed;
     top: 0px;
     left: 0px;
 
     z-index: -1;
+}
+
+img { align-self: center; }
+h2 { text-align: center; }
+a { color: aqua; }
+
+code {
+    font-weight: bolder;
+    
+    background-color: #1f1212c5;
+    border-radius: 2px;
+
+    padding: 4px;
 }
 
 .main {
@@ -21,25 +34,23 @@ canvas {
     font-family: monospace;
     display: block;
 
-    margin: 0px;
-    padding: 0px;
-
-    margin-top: 10%;
-    margin-left: 10%;
-    margin-right: 10%;
+    /* I can't remember how to center with margin so go go gadget other center*/
+    margin: 16px 0px 16px 50%;
     padding: 10px;
+    
+    transform: translate(-50%, 0%);
+
+    min-height: calc(100vh - 52px);
+    width:100%;
+    min-width: 396px;
+    max-width: 700px;
 
     backdrop-filter: blur(12px);
+
+    display: flex;
+    flex-direction: column;
+
+    border-radius: 16px;
 }
 
-h1 {
-    text-align: center;
-}
-
-a {
-    color: aqua;
-}
-
-code {
-    font-weight: bolder;
-}
+.italian { font-style: italic; }
