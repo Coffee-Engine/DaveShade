@@ -149,6 +149,23 @@ DaveShade.module = class {
         return this.createShader(fetched);
     }
 
+    textureFromURL(url) {
+        //Make a promise that loads the image, and creates the texture from it.
+        return new Promise((resolve, reject) => {
+            const image = new Image();
+
+            //Create the texture
+            image.onload = () => resolve(this.createTexture(image));
+
+            //Just in case
+            image.onerror = () => reject();
+            image.onabort = () => reject();
+
+            //Tell it the source of the image.
+            image.src = url;
+        });
+    }
+
     constructor(CANVAS, SETTINGS) {
         //Remove ourselves if canvas doesn't exist
         if (!CANVAS) {
@@ -575,6 +592,10 @@ DaveShade.webGLModule = class extends DaveShade.module {
     useProgram(PROGRAM) { this.GL.useProgram(PROGRAM); }
 
     setUniform(SHADER, UNIFORM, VALUE, NO_SET_PROGRAM) {
+        //If we are a texture extract the texture
+        if (VALUE instanceof DaveShade.texture) VALUE = VALUE.texture;
+
+        //Check uniform info and set appropriately
         const uniformInfo = SHADER.UNIFORMS[UNIFORM];
         if (Array.isArray(uniformInfo)) {
             //Loop through values

@@ -6,10 +6,13 @@
         [YAW SIN, YAW COS, Y],
         [ROLL SIN, ROLL COS, Z],
     ]
+
+    Go to Line 141 for the actual texture loading code, or just search "Load the texture from the url"
 */
 
 const canvas = document.getElementById("canvas");
 const instance = DaveShade.createInstance(canvas);
+let texture = null;
 
 const colourShader = instance.createShader(`
 attribute mediump vec3 a_position;
@@ -127,11 +130,16 @@ const loop = () => {
             Math.sin(now / 3), Math.cos(now / 3), 0,
             Math.sin(now / 5), Math.cos(now / 5), 1.5,
         ],
-        u_aspect: 4/3 //Just going to make the cube stay a cube.
+        u_aspect: 4/3, //Just going to make the cube stay a cube.
+        u_texture: texture
     });
 
     colourShader.drawFromBuffers(36);
     requestAnimationFrame(loop);
 }
 
-requestAnimationFrame(loop);
+//Load the texture from the url, set the variable, and start the loop.
+instance.textureFromURL("main.svg").then(tex => {
+    texture = tex;
+    requestAnimationFrame(loop);
+});
