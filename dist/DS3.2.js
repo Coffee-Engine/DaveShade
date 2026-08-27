@@ -212,7 +212,9 @@ DaveShade.shader = class {
         this.PARENT_MODULE.useProgram(this.PROGRAM);
 
         //Loop through keys
-        for (let key in UNIFORM_JSON) {
+        const keys = Object.keys(UNIFORM_JSON); //IIRC this is faster than "in"
+        for (let i = 0; i < keys.length; i++) {
+            const key = keys[i];
             if (!this.uniforms[key]) continue;
 
             this.PARENT_MODULE.setUniform(this, key, UNIFORM_JSON[key], true);
@@ -367,20 +369,7 @@ DaveShade.webGLModule = class extends DaveShade.module {
                 for (let index = 0; index < arrayLength; index++) {
                     const location = this.GL.getUniformLocation(SHADER.PROGRAM, `${uniformName}[${index}]`);
 
-                    SHADER.UNIFORMS[uniformName].push({
-                        location: location,
-                        type: uniformInfo.type,
-                        isArray: isArray,
-                        _value: null,
-
-                        set value(value) {
-                            module.setUniform(SHADER, `${uniformName}[${index}]`, value);
-                        },
-                        get value() {
-                            return SHADER.UNIFORMS[`${uniformName}[${index}]`]["_value"];
-                        },
-                    });
-
+                    //Stop writing code twice.
                     SHADER.UNIFORMS[`${uniformName}[${index}]`] = {
                         location: location,
                         type: uniformInfo.type,
@@ -394,6 +383,8 @@ DaveShade.webGLModule = class extends DaveShade.module {
                             return SHADER.UNIFORMS[uniformName]["_value"];
                         },
                     };
+
+                    SHADER.UNIFORMS[uniformName].push(SHADER.UNIFORMS[`${uniformName}[${index}]`]);
                 }
             } else {
                 const location = this.GL.getUniformLocation(SHADER.PROGRAM, uniformName);
@@ -598,17 +589,26 @@ DaveShade.webGLModule = class extends DaveShade.module {
 
         //Check uniform info and set appropriately
         const uniformInfo = SHADER.UNIFORMS[UNIFORM];
-        if (Array.isArray(uniformInfo)) {
-            //Loop through values
-            for (let item in VALUE) {
-                if (!uniformInfo[item]) break;
+        const isArray = Array.isArray(uniformInfo);
+        if (isArray && Array.isArray(VALUE)) {
+            if (!NO_SET_PROGRAM) this.useProgram(SHADER.PROGRAM);
 
-                uniformInfo[item].value = item;
+            //Loop through values
+            for (let i = 0; i < uniformInfo.length; i++) {
+                //Make sure it is valid
+                if (i > VALUE.length || !uniformInfo[i]) break;
+
+                //Then send it over
+                let itemInfo = uniformInfo[i];
+
+                itemInfo["_value"] = VALUE[i];
+                this.SETTERS[itemInfo.type](itemInfo.location, VALUE[i], itemInfo);
             }
 
             return;
         }
-
+        
+        if (isArray) return;
         if (!NO_SET_PROGRAM) this.useProgram(SHADER.PROGRAM);
 
         uniformInfo["_value"] = VALUE;
