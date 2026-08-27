@@ -15,10 +15,10 @@ canvas {
     position: absolute;
 
     /* Position */
-    top: 0%;
+    top: 100%;
     left: 50%;
 
-    transform: translate(-50%, 0%);
+    transform: translate(-50%, -100%);
     image-rendering: pixelated;
     filter: blur(0px);
     z-index: -1;
