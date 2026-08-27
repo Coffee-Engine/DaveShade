@@ -16,6 +16,7 @@ canvas {
 
 img { align-self: center; }
 h2 { text-align: center; }
+h3 { margin-bottom: 4px; }
 a { color: aqua; }
 
 code {
@@ -54,3 +55,14 @@ code {
 }
 
 .italian { font-style: italic; }
+
+.keynote {
+    margin-top: 0px;
+    opacity: 50%;
+    font-size: small;
+    line-height: 1.7em;
+
+    transition: opacity 500ms, font-weight 500ms;
+}
+
+.keynote:hover { opacity: 100%; }

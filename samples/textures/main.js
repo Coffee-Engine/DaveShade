@@ -36,8 +36,6 @@ const triangleBuffers = instance.buffersFromJSON({
 instance.textureFromURL("main.svg").then(tex => {
     //Draw our triangle
     colourShader.setBuffers(triangleBuffers);
-    colourShader.setUniforms({
-        u_texture: tex
-    })
+    colourShader.setUniform("u_texture", tex);
     colourShader.drawFromBuffers(3);
 })
