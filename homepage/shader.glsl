@@ -2,7 +2,7 @@
 //This code was originally made for Pen+ and adapted into a DaveShade GLSL shader
 //Expect some weirdness
 
-precision highp float;
+precision mediump float;
 
 attribute vec2 a_position;
 attribute vec2 a_texcoord;
@@ -10,6 +10,7 @@ attribute vec2 a_texcoord;
 varying vec2 v_texcoord;
 
 uniform float u_time;
+uniform float u_aspect;
 
 highp vec4 HSVToRGB(highp float hue, highp float saturation, highp float value, highp float a) {
   highp float huePrime = mod(hue,360.0);
@@ -53,7 +54,7 @@ highp vec4 HSVToRGB(highp float hue, highp float saturation, highp float value, 
 
 void vertex() {
     gl_Position = vec4(a_position, 0, 1);
-    v_texcoord = a_texcoord;
+    v_texcoord = a_texcoord * vec2(u_aspect, 1);
 }
 
 void fragment() {

@@ -24,7 +24,7 @@
     });
 
     //Load shader from url
-    instance.shaderFromURL("homepage/shader.glsl").then(shader => {
+    instance.shaderFromURL("shader.glsl").then(shader => {
         //Set our geometry first
         shader.setBuffers(geometry);
 

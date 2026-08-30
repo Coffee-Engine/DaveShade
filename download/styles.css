@@ -1,0 +1,100 @@
+body {
+    margin: 0px;
+    padding: 0px;
+
+    --background-1: #0b14097e;
+    --text-1: aliceblue;
+    text-align: center;
+}
+
+canvas {
+    width: 100vw;
+    height: 100vh;
+
+    position: fixed;
+    top: 0px;
+    left: 0px;
+
+    z-index: -1;
+}
+
+img { align-self: center; }
+h3 { margin-bottom: 4px; }
+a { color: aqua; }
+
+code {
+    font-weight: bolder;
+    
+    background-color: #1f1212c5;
+    border-radius: 2px;
+
+    padding: 4px;
+}
+
+select {
+    background-color: var(--background-1);
+    border: solid 1px var(--text-1);
+    border-radius: 4px;
+
+    color: var(--text-1);
+}
+
+button {
+    background-color: var(--background-1);
+    border: solid 1px var(--text-1);
+    border-radius: 4px;
+
+    color: var(--text-1);
+
+    transition: background-color 250ms, border-color 250ms, color 250ms;
+}
+
+button:hover {
+    background-color: var(--text-1);
+    border-color: var(--background-1);
+    color: var(--background-1);
+}
+
+button:active {
+    background-color: var(--text-1);
+    border-color: var(--text-1);
+    color: var(--text-1);
+
+    transition: background-color 0ms, border-color 0ms, color 0ms;
+}
+
+.main {
+    background-color: #00000080;
+    color: var(--text-1);
+
+    font-family: monospace;
+    display: block;
+
+    /* I can't remember how to center with margin so go go gadget other center*/
+    margin: 16px 0px 16px 50%;
+    padding: 10px;
+    
+    transform: translate(-50%, 0%);
+
+    min-height: calc(100vh - 52px);
+    width:100%;
+    min-width: 396px;
+    max-width: 700px;
+
+    backdrop-filter: blur(12px);
+
+    border-radius: 16px;
+}
+
+.italian { font-style: italic; }
+
+.keynote {
+    margin-top: 0px;
+    opacity: 50%;
+    font-size: small;
+    line-height: 1.7em;
+
+    transition: opacity 500ms, font-weight 500ms;
+}
+
+.keynote:hover { opacity: 100%; }
