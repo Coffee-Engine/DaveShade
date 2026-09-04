@@ -18,13 +18,11 @@ attribute mediump vec3 a_colour;
 varying mediump vec3 v_colour;
 
 uniform mediump mat4 u_transform;
-uniform mediump float u_aspect;
+uniform mediump mat4 u_projection;
 
 void vertex() {
-    vec3 calc = (vec4(a_position, 1) * u_transform).xyz;
-	
     //Now send to the fragment
-    gl_Position = vec4(calc - vec3(0, 0, 1), calc.z) / vec4(u_aspect, 1, 1, 1);
+    gl_Position = vec4(a_position, 1) * u_transform * u_projection;
     v_colour = a_colour;
 }
 
@@ -101,11 +99,9 @@ const loop = () => {
 
     cubeShader.setBuffers(triangleBuffers);
     cubeShader.setUniforms({
-        u_transform: DaveShade.matrix4.identity().translate(0, 0, 1.5)
-            .rotateY(now / 3)
-            .rotateX(now)
-            .rotateZ(now / 5),
-        u_aspect: 4/3 //Just going to make the cube stay a cube.
+        //                                                             It's still X,   Y,       Z
+        u_transform: DaveShade.matrix4.identity().translate(0, 0, 1.5).rotateYXZ(now, now / 3, now / 5),
+        u_projection: DaveShade.matrix4.projection(70, 4/3, 0.1) // Also a projection matrix, you could use an orthographic matrix too
     });
 
     cubeShader.drawFromBuffers(36);

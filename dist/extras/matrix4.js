@@ -170,3 +170,29 @@ DaveShade.matrix4.identity = () => {
         0, 0, 0, 1
     );
 }
+
+//Camera stuff
+DaveShade.matrix4.projection = (FOV, aspect, near) => {
+    const vertical = Math.tan(FOV * Math.PI / 360);
+
+    //Get near and invert
+    if (typeof near != "number" || isNaN(near)) near = 1;
+    else if (near <= 0) near = 0.1; //Make sure it isn't <0
+    near = 1/near;
+    
+    return new DaveShade.matrix4(
+        near / (vertical * aspect * 2), 0, 0, 0,
+        0, near / (vertical * 2), 0, 0,
+        0, 0, 1, -1,
+        0, 0, near, 0
+    );
+}
+
+DaveShade.matrix4.orthographic = (zoom, aspect) => {
+    return new DaveShade.matrix4(
+        zoom / aspect, 0, 0, 0,
+        0, zoom, 0, 0,
+        0, 0, 1, -1,
+        0, 0, 0, 1
+    );
+}
