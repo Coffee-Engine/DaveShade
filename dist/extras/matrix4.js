@@ -4,7 +4,7 @@ DaveShade.matrix4 = class {
         this.xx = xx || 0; this.xy = xy || 0; this.xz = xz || 0; this.xw = xw || 0;
         this.yx = yx || 0; this.yy = yy || 0; this.yz = yz || 0; this.yw = yw || 0;
         this.zx = zx || 0; this.zy = zy || 0; this.zz = zz || 0; this.zw = zw || 0;
-        this.wx = wx || 0; this.wy = zy || 0; this.wz = zz || 0; this.ww = ww || 0;
+        this.wx = wx || 0; this.wy = wy || 0; this.wz = wz || 0; this.ww = ww || 0;
     }
 
     duplicate() {
@@ -20,18 +20,25 @@ DaveShade.matrix4 = class {
     multiply(multiplicator) {
         const resultor = this.duplicate();
         if (multiplicator instanceof DaveShade.matrix4) {
-            resultor.xx = this.xx * multiplicator.xx + this.xy * multiplicator.yx + this.xz * multiplicator.zx;
-            resultor.xy = this.xx * multiplicator.xy + this.xy * multiplicator.yy + this.xz * multiplicator.zy;
-            resultor.xz = this.xx * multiplicator.xz + this.xy * multiplicator.yz + this.xz * multiplicator.zz;
-            resultor.xz = this.xx * multiplicator.xz + this.xy * multiplicator.yz + this.xz * multiplicator.zz;
+            resultor.xx = this.xx * multiplicator.xx + this.xy * multiplicator.yx + this.xz * multiplicator.zx + this.xw * multiplicator.wx;
+            resultor.xy = this.xx * multiplicator.xy + this.xy * multiplicator.yy + this.xz * multiplicator.zy + this.xw * multiplicator.wy;
+            resultor.xz = this.xx * multiplicator.xz + this.xy * multiplicator.yz + this.xz * multiplicator.zz + this.xw * multiplicator.wz;
+            resultor.xw = this.xx * multiplicator.xw + this.xy * multiplicator.yw + this.xz * multiplicator.zw + this.xw * multiplicator.ww;
 
-            resultor.yx = this.yx * multiplicator.xx + this.yy * multiplicator.yx + this.yz * multiplicator.zx;
-            resultor.yy = this.yx * multiplicator.xy + this.yy * multiplicator.yy + this.yz * multiplicator.zy;
-            resultor.yz = this.yx * multiplicator.xz + this.yy * multiplicator.yz + this.yz * multiplicator.zz;
+            resultor.yx = this.yx * multiplicator.xx + this.yy * multiplicator.yx + this.yz * multiplicator.zx + this.yw * multiplicator.wx;
+            resultor.yy = this.yx * multiplicator.xy + this.yy * multiplicator.yy + this.yz * multiplicator.zy + this.yw * multiplicator.wy;
+            resultor.yz = this.yx * multiplicator.xz + this.yy * multiplicator.yz + this.yz * multiplicator.zz + this.yw * multiplicator.wz;
+            resultor.yw = this.yx * multiplicator.xw + this.yy * multiplicator.yw + this.yz * multiplicator.zw + this.yw * multiplicator.ww;
 
-            resultor.zx = this.zx * multiplicator.xx + this.zy * multiplicator.yx + this.zz * multiplicator.zx;
-            resultor.zy = this.zx * multiplicator.xy + this.zy * multiplicator.yy + this.zz * multiplicator.zy;
-            resultor.zz = this.zx * multiplicator.xz + this.zy * multiplicator.yz + this.zz * multiplicator.zz;
+            resultor.zx = this.zx * multiplicator.xx + this.zy * multiplicator.yx + this.zz * multiplicator.zx + this.zw * multiplicator.wx;
+            resultor.zy = this.zx * multiplicator.xy + this.zy * multiplicator.yy + this.zz * multiplicator.zy + this.zw * multiplicator.wy;
+            resultor.zz = this.zx * multiplicator.xz + this.zy * multiplicator.yz + this.zz * multiplicator.zz + this.zw * multiplicator.wz;
+            resultor.zw = this.zx * multiplicator.xw + this.zy * multiplicator.yw + this.zz * multiplicator.zw + this.zw * multiplicator.ww;
+
+            resultor.wx = this.wx * multiplicator.xx + this.wy * multiplicator.yx + this.wz * multiplicator.zx + this.ww * multiplicator.wx;
+            resultor.wy = this.wx * multiplicator.xy + this.wy * multiplicator.yy + this.wz * multiplicator.zy + this.ww * multiplicator.wy;
+            resultor.wz = this.wx * multiplicator.xz + this.wy * multiplicator.yz + this.wz * multiplicator.zz + this.ww * multiplicator.wz;
+            resultor.ww = this.wx * multiplicator.xw + this.wy * multiplicator.yw + this.wz * multiplicator.zw + this.ww * multiplicator.ww;
         }
 
         return resultor;
@@ -119,18 +126,16 @@ DaveShade.matrix4 = class {
 
     get _UNIFORM_VALUE_() {
         return [
-            this.xx, this.xy, this.xz,
-            this.yx, this.yy, this.yz,
-            this.zx, this.zy, this.zz
+            this.xx, this.xy, this.xz, this.xw,
+            this.yx, this.yy, this.yz, this.yw,
+            this.zx, this.zy, this.zz, this.zw,
+            this.wx, this.wy, this.wz, this.ww
         ];
     }
 
     get translation() {
         return [ this.xw, this.yw, this.zw ];
     }
-
-    // TODO
-    get rotation() { return Math.atan2(this.xy, this.xx); }
 
     get scalar() {
         let xx = this.xx; let xy = this.xy; let xz = this.xz;
@@ -143,13 +148,25 @@ DaveShade.matrix4 = class {
             Math.sqrt(zx * zx + zy * zy + zz * zz),
         ];
     }
+
+    //Extract the rotation matrix
+    get rotationMatrix() {
+        const s = this.scalar;
+        
+        return [
+            this.xx / s, this.xy / s, this.xz / s,
+            this.yx / s, this.yy / s, this.yz / s,
+            this.zx / s, this.zy / s, this.zz / s
+        ];
+    }
 }
 
 // Just a simple identity matrix
 DaveShade.matrix4.identity = () => {
     return new DaveShade.matrix4(
-        1, 0, 0,
-        0, 1, 0,
-        0, 0, 1
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
     );
 }
