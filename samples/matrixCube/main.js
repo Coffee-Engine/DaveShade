@@ -101,7 +101,7 @@ const loop = () => {
     cubeShader.setUniforms({
         //                                                             It's still X,   Y,       Z
         u_transform: DaveShade.matrix4.identity().translate(0, 0, 1.5).rotateYXZ(now, now / 3, now / 5),
-        u_projection: DaveShade.matrix4.projection(70, 4/3, 0.1) // Also a projection matrix, you could use an orthographic matrix too
+        u_projection: DaveShade.matrix4.projection(50, 4/3, 0.1) // Also a projection matrix, you could use an orthographic matrix too
     });
 
     cubeShader.drawFromBuffers(36);

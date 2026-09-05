@@ -1,1 +1,4 @@
-[]
+[
+    ["3x3 Matrix", "matrix3.js", true],
+    ["4x4 Matrix", "matrix4.js", true]
+]

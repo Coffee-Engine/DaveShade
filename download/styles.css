@@ -3,6 +3,7 @@ body {
     padding: 0px;
 
     --background-1: #0b14097e;
+    --background-2: #0202029c;
     --text-1: aliceblue;
     text-align: center;
 }
@@ -98,3 +99,17 @@ button:active {
 }
 
 .keynote:hover { opacity: 100%; }
+
+.options {
+    background: var(--background-2);
+    max-width: min(300px, 100vw);
+
+    /* center it */
+    margin-left: 50%;
+    transform: translate(-50%, 0%);
+
+    display: grid;
+    grid-template-columns: 1fr auto;
+
+    margin-bottom: 1em;
+}
