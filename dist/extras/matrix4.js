@@ -162,8 +162,115 @@ DaveShade.matrix4 = class {
         return x - y + z - w;
     }
 
+    //Clean up when at home
+    //First I need to find the most commonly multiplied numbers
     inverse() {
-        
+        //Find adjugate matrix
+        const xx = this._3x3_det(
+            this.yy, this.yz, this.yw,
+            this.zy, this.zz, this.zw,
+            this.wy, this.wz, this.ww
+        );
+
+        const yx = this.xy * this._3x3_det(
+            this.yx, this.yz, this.yw,
+            this.zx, this.zz, this.zw,
+            this.wx, this.wz, this.ww
+        );
+
+        const zx = this._3x3_det(
+            this.yx, this.yy, this.yw,
+            this.zx, this.zy, this.zw,
+            this.wx, this.wy, this.ww
+        );
+
+        const wx = this._3x3_det(
+            this.yx, this.yy, this.yz,
+            this.zx, this.zy, this.zz,
+            this.wx, this.wy, this.wz
+        );
+
+        const xy = this._3x3_det(
+            this.xy, this.xz, this.xw,
+            this.zy, this.zz, this.zw,
+            this.wy, this.wz, this.ww
+        );
+
+        const yy = this.xy * this._3x3_det(
+            this.xx, this.xz, this.xw,
+            this.zx, this.zz, this.zw,
+            this.wx, this.wz, this.ww
+        );
+
+        const zy = this._3x3_det(
+            this.xx, this.xy, this.xw,
+            this.zx, this.zy, this.zw,
+            this.wx, this.wy, this.ww
+        );
+
+        const wy = this._3x3_det(
+            this.xx, this.xy, this.xz,
+            this.zx, this.zy, this.zz,
+            this.wx, this.wy, this.wz
+        );
+
+        const xz = this._3x3_det(
+            this.xy, this.xz, this.xw,
+            this.yy, this.yz, this.yw,
+            this.wy, this.wz, this.ww
+        );
+
+        const yz = this.xy * this._3x3_det(
+            this.xx, this.xz, this.xw,
+            this.yx, this.yz, this.yw,
+            this.wx, this.wz, this.ww
+        );
+
+        const zz = this._3x3_det(
+            this.xx, this.xy, this.xw,
+            this.yx, this.yy, this.yw,
+            this.wx, this.wy, this.ww
+        );
+
+        const wz = this._3x3_det(
+            this.xx, this.xy, this.xz,
+            this.yx, this.yy, this.yz,
+            this.wx, this.wy, this.wz
+        );
+
+        const xw = this._3x3_det(
+            this.xy, this.xz, this.xw,
+            this.yy, this.yz, this.yw,
+            this.zy, this.zz, this.zw
+        );
+
+        const yw = this.xy * this._3x3_det(
+            this.xx, this.xz, this.xw,
+            this.yx, this.yz, this.yw,
+            this.zx, this.zz, this.zw
+        );
+
+        const zw = this._3x3_det(
+            this.xx, this.xy, this.xw,
+            this.yx, this.yy, this.yw,
+            this.zx, this.zy, this.zw
+        );
+
+        const ww = this._3x3_det(
+            this.xx, this.xy, this.xz,
+            this.yx, this.yy, this.yz,
+            this.zx, this.zy, this.zz
+        );
+
+        //Get the inverse of the determinant
+        const inv = 1 / (this.xx * xx - this.xy * yx + this.xz * zx - this.xw * wx);
+
+        return DaveShade.matrix4(
+            xx * inv, -xy * inv, xz * inv, -xw * inv,
+            -yx * inv, yy * inv, -yz * inv, yw * inv,
+            zx * inv, -zy * inv, zz * inv, -zw * inv,
+            -wx * inv, wy * inv, -wz * inv, ww * inv
+        );
     }
 
     get _UNIFORM_VALUE_() {
