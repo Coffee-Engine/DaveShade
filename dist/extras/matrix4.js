@@ -124,6 +124,48 @@ DaveShade.matrix4 = class {
         ));
     }
 
+    //Below is just a quick helper function for finding the 4x4 determinant
+    _3x3_det(xx, xy, xz, yx, yy, yz, zx, zy, zz) {
+        return (
+            (xx * yy * zz) - (xz * yy * zx) + 
+            (xy * yz * zx) - (xx * yz * zy) +
+            (xz * yx * zy) - (xy * yx * zz)
+        );
+    }
+
+    //More advanced transforms
+    determinant() {
+        const x = this.xx * this._3x3_det(
+            this.yy, this.yz, this.yw,
+            this.zy, this.zz, this.zw,
+            this.wy, this.wz, this.ww
+        );
+
+        const y = this.xy * this._3x3_det(
+            this.yx, this.yz, this.yw,
+            this.zx, this.zz, this.zw,
+            this.wx, this.wz, this.ww
+        );
+
+        const z = this.xz * this._3x3_det(
+            this.yx, this.yy, this.yw,
+            this.zx, this.zy, this.zw,
+            this.wx, this.wy, this.ww
+        );
+
+        const w = this.xw * this._3x3_det(
+            this.yx, this.yy, this.yz,
+            this.zx, this.zy, this.zz,
+            this.wx, this.wy, this.wz
+        );
+
+        return x - y + z - w;
+    }
+
+    inverse() {
+        
+    }
+
     get _UNIFORM_VALUE_() {
         return [
             this.xx, this.xy, this.xz, this.xw,
@@ -138,9 +180,9 @@ DaveShade.matrix4 = class {
     }
 
     get scalar() {
-        let xx = this.xx; let xy = this.xy; let xz = this.xz;
-        let yx = this.yx; let yy = this.yy; let yz = this.yz;
-        let zx = this.zx; let zy = this.zy; let zz = this.zz;
+        const xx = this.xx; const xy = this.xy; const xz = this.xz;
+        const yx = this.yx; const yy = this.yy; const yz = this.yz;
+        const zx = this.zx; const zy = this.zy; const zz = this.zz;
 
         return [
             Math.sqrt(xx * xx + xy * xy + xz * xz),
@@ -153,11 +195,14 @@ DaveShade.matrix4 = class {
     get rotationMatrix() {
         const s = this.scalar;
         
-        return [
+        const rotationMat = [
             this.xx / s, this.xy / s, this.xz / s,
             this.yx / s, this.yy / s, this.yz / s,
             this.zx / s, this.zy / s, this.zz / s
         ];
+
+        if (DaveShade.matrix3) return new DaveShade.matrix3(...rotationMat);
+        return rotationMat;
     }
 }
 

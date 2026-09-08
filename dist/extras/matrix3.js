@@ -69,6 +69,47 @@ DaveShade.matrix3 = class {
         ));
     }
 
+    //Advanced transformations
+    determinant() {
+        //We are doing the diagonal method,
+        //though I do have the more traditional method commented out below
+        return (
+            (this.xx * this.yy * this.zz) - (this.xz * this.yy * this.zx) + 
+            (this.xy * this.yz * this.zx) - (this.xx * this.yz * this.zy) +
+            (this.xz * this.yx * this.zy) - (this.xy * this.yx * this.zz)
+        );
+        /*
+        const x = this.xx * (this.yy * this.zz - this.yz * this.zy);
+        const y = this.xy * (this.zz * this.yx - this.yz * this.zx);
+        const z = this.xz * (this.yx * this.zy - this.zx * this.yy);
+
+        return x - y + z;
+        */
+    }
+
+    inverse() {
+        //First we will calculate the matrix of minors
+        const mxx = (this.yy * this.zz - this.zy * this.yz);
+        const myx = -(this.yz * this.zx - this.zz * this.yx);
+        const mzx = (this.yx * this.zy - this.zx * this.yy);
+
+        const mxy = -(this.zy * this.xz - this.xy * this.zz);
+        const myy = (this.zz * this.xx - this.xz * this.zx);
+        const mzy = -(this.zx * this.xy - this.xx * this.zy);
+
+        const mxz = (this.xy * this.yz - this.yy * this.xz);
+        const myz = -(this.xz * this.yx - this.yz * this.xx);
+        const mzz = (this.xx * this.yy - this.yx * this.xy);
+        
+        //Get the inverse determinant and transpose.
+        const inv = 1 / this.determinant();
+        return new DaveShade.matrix3(
+            inv * mxx, inv * mxy, inv * mxz,
+            inv * myx, inv * myy, inv * myz,
+            inv * mzx, inv * mzy, inv * mzz
+        );
+    }
+
     get array() {
         return [
             this.xx, this.xy, this.xz,
