@@ -172,7 +172,7 @@ DaveShade.matrix4 = class {
             this.wy, this.wz, this.ww
         );
 
-        const yx = this.xy * this._3x3_det(
+        const yx = this._3x3_det(
             this.yx, this.yz, this.yw,
             this.zx, this.zz, this.zw,
             this.wx, this.wz, this.ww
@@ -196,7 +196,7 @@ DaveShade.matrix4 = class {
             this.wy, this.wz, this.ww
         );
 
-        const yy = this.xy * this._3x3_det(
+        const yy = this._3x3_det(
             this.xx, this.xz, this.xw,
             this.zx, this.zz, this.zw,
             this.wx, this.wz, this.ww
@@ -220,7 +220,7 @@ DaveShade.matrix4 = class {
             this.wy, this.wz, this.ww
         );
 
-        const yz = this.xy * this._3x3_det(
+        const yz = this._3x3_det(
             this.xx, this.xz, this.xw,
             this.yx, this.yz, this.yw,
             this.wx, this.wz, this.ww
@@ -244,7 +244,7 @@ DaveShade.matrix4 = class {
             this.zy, this.zz, this.zw
         );
 
-        const yw = this.xy * this._3x3_det(
+        const yw = this._3x3_det(
             this.xx, this.xz, this.xw,
             this.yx, this.yz, this.yw,
             this.zx, this.zz, this.zw
@@ -265,7 +265,7 @@ DaveShade.matrix4 = class {
         //Get the inverse of the determinant
         const inv = 1 / (this.xx * xx - this.xy * yx + this.xz * zx - this.xw * wx);
 
-        return DaveShade.matrix4(
+        return new DaveShade.matrix4(
             xx * inv, -xy * inv, xz * inv, -xw * inv,
             -yx * inv, yy * inv, -yz * inv, yw * inv,
             zx * inv, -zy * inv, zz * inv, -zw * inv,
