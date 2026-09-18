@@ -1,9 +1,27 @@
 DaveShade.matrix3 = class {
+    //Private stored values
+    #xx = 0; #xy = 0; #xz = 0;
+    #yx = 0; #yy = 0; #yz = 0;
+    #zx = 0; #zy = 0; #zz = 0;
+
+    //For keeping the matrix clean.
+    set xx(v) { this.#xx = DaveShade.cleanNumber(v); } get xx() { return this.#xx; }
+    set xy(v) { this.#xy = DaveShade.cleanNumber(v); } get xy() { return this.#xy; }
+    set xz(v) { this.#xz = DaveShade.cleanNumber(v); } get xz() { return this.#xz; }
+
+    set yx(v) { this.#yx = DaveShade.cleanNumber(v); } get yx() { return this.#yx; }
+    set yy(v) { this.#yy = DaveShade.cleanNumber(v); } get yy() { return this.#yy; }
+    set yz(v) { this.#yz = DaveShade.cleanNumber(v); } get yz() { return this.#yz; }
+
+    set zx(v) { this.#zx = DaveShade.cleanNumber(v); } get zx() { return this.#zx; }
+    set zy(v) { this.#zy = DaveShade.cleanNumber(v); } get zy() { return this.#zy; }
+    set zz(v) { this.#zz = DaveShade.cleanNumber(v); } get zz() { return this.#zz; }
+
     //Two basic construction methods
     constructor(xx, xy, xz, yx, yy, yz, zx, zy, zz) {
-        this.xx = xx || 0; this.xy = xy || 0; this.xz = xz || 0;
-        this.yx = yx || 0; this.yy = yy || 0; this.yz = yz || 0;
-        this.zx = zx || 0; this.zy = zy || 0; this.zz = zz || 0;
+        this.xx = xx; this.xy = xy; this.xz = xz;
+        this.yx = yx; this.yy = yy; this.yz = yz;
+        this.zx = zx; this.zy = zy; this.zz = zz;
     }
 
     duplicate() {

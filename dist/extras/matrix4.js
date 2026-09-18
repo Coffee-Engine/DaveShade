@@ -1,10 +1,37 @@
 DaveShade.matrix4 = class {
+    //Private stored values
+    #xx = 0; #xy = 0; #xz = 0; #xw = 0;
+    #yx = 0; #yy = 0; #yz = 0; #yw = 0;
+    #zx = 0; #zy = 0; #zz = 0; #zw = 0;
+    #wx = 0; #wy = 0; #wz = 0; #ww = 0;
+
+    //For keeping the matrix clean.
+    set xx(v) { this.#xx = DaveShade.cleanNumber(v); } get xx() { return this.#xx; }
+    set xy(v) { this.#xy = DaveShade.cleanNumber(v); } get xy() { return this.#xy; }
+    set xz(v) { this.#xz = DaveShade.cleanNumber(v); } get xz() { return this.#xz; }
+    set xw(v) { this.#xw = DaveShade.cleanNumber(v); } get xw() { return this.#xw; }
+
+    set yx(v) { this.#yx = DaveShade.cleanNumber(v); } get yx() { return this.#yx; }
+    set yy(v) { this.#yy = DaveShade.cleanNumber(v); } get yy() { return this.#yy; }
+    set yz(v) { this.#yz = DaveShade.cleanNumber(v); } get yz() { return this.#yz; }
+    set yw(v) { this.#yw = DaveShade.cleanNumber(v); } get yw() { return this.#yw; }
+
+    set zx(v) { this.#zx = DaveShade.cleanNumber(v); } get zx() { return this.#zx; }
+    set zy(v) { this.#zy = DaveShade.cleanNumber(v); } get zy() { return this.#zy; }
+    set zz(v) { this.#zz = DaveShade.cleanNumber(v); } get zz() { return this.#zz; }
+    set zw(v) { this.#zw = DaveShade.cleanNumber(v); } get zw() { return this.#zw; }
+
+    set wx(v) { this.#wx = DaveShade.cleanNumber(v); } get wx() { return this.#wx; }
+    set wy(v) { this.#wy = DaveShade.cleanNumber(v); } get wy() { return this.#wy; }
+    set wz(v) { this.#wz = DaveShade.cleanNumber(v); } get wz() { return this.#wz; }
+    set ww(v) { this.#ww = DaveShade.cleanNumber(v); } get ww() { return this.#ww; }
+
     //Two basic construction methods
     constructor(xx, xy, xz, xw, yx, yy, yz, yw, zx, zy, zz, zw, wx, wy, wz, ww) {
-        this.xx = xx || 0; this.xy = xy || 0; this.xz = xz || 0; this.xw = xw || 0;
-        this.yx = yx || 0; this.yy = yy || 0; this.yz = yz || 0; this.yw = yw || 0;
-        this.zx = zx || 0; this.zy = zy || 0; this.zz = zz || 0; this.zw = zw || 0;
-        this.wx = wx || 0; this.wy = wy || 0; this.wz = wz || 0; this.ww = ww || 0;
+        this.xx = xx; this.xy = xy; this.xz = xz; this.xw = xw;
+        this.yx = yx; this.yy = yy; this.yz = yz; this.yw = yw;
+        this.zx = zx; this.zy = zy; this.zz = zz; this.zw = zw;
+        this.wx = wx; this.wy = wy; this.wz = wz; this.ww = ww;
     }
 
     duplicate() {
