@@ -113,3 +113,7 @@ button:active {
 
     margin-bottom: 1em;
 }
+
+.options > p {
+    margin: 4px 0px 4px 0px;
+}

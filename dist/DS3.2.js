@@ -27,8 +27,35 @@
 window.DaveShade = {
     MODULES: [],
     INDICE_IDENTIFIER: "__INDICIES__",
-    VERSION: "3.2",
+    VERSION: "3.2.1",
 };
+
+//Just a small cust helper
+DaveShade.cleanNumber = (input, isDown) => {
+    if (Array.isArray(input) && !isDown) {
+        const output = [...input]
+        for (let i = 0; i < input.length; i++) {
+            DaveShade.cleanNumber(input[i]);
+        }
+        
+        return input;
+    }
+
+    switch (typeof input) {
+        //If we are a bigint or string cast to Number.
+        case "bigint":
+        case "string": input = Number(input);
+
+        case "number":
+            if (isNaN(input)) return 0;
+            return input;
+        
+        //If we are a boolean, do 1 or 0
+        case "boolean": return (input) ? 1 : 0;
+    
+        default: return 0;
+    }
+}
 
 //Module Creation
 // prettier-ignore
@@ -1188,11 +1215,11 @@ DaveShade.webGLModule = class extends DaveShade.module {
         //Setters
         
         //We clamp the boolean
-        this.SETTERS[this.GL.BOOL] = (LOCATION, VALUE) => { this.GL.uniform1ui(LOCATION, Math.max(Math.min(1, Math.floor(VALUE)), 0)); }
+        this.SETTERS[this.GL.BOOL] = (LOCATION, VALUE) => { this.GL.uniform1ui(LOCATION, Math.max(Math.min(1, VALUE | 0), 0)); }
 
         //Make sure integers are rounded
-        this.SETTERS[this.GL.INT] = (LOCATION, VALUE) => { this.GL.uniform1i(LOCATION, Math.floor(VALUE)); }
-        this.SETTERS[this.GL.UNSIGNED_INT] = (LOCATION, VALUE) => { this.GL.uniform1ui(LOCATION, Math.floor(VALUE)); }
+        this.SETTERS[this.GL.INT] = (LOCATION, VALUE) => { this.GL.uniform1i(LOCATION, VALUE | 0); }
+        this.SETTERS[this.GL.UNSIGNED_INT] = (LOCATION, VALUE) => { this.GL.uniform1ui(LOCATION, VALUE | 0); }
 
         //Then the float likes
         this.SETTERS[this.GL.FLOAT] = (LOCATION, VALUE) => { this.GL.uniform1f(LOCATION, VALUE); }
