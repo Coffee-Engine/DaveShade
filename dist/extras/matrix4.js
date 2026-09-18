@@ -161,7 +161,7 @@ DaveShade.matrix4 = class {
     }
 
     //More advanced transforms
-    determinant() {
+    get determinant() {
         const x = this.xx * this._3x3_det(
             this.yy, this.yz, this.yw,
             this.zy, this.zz, this.zw,

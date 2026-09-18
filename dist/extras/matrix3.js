@@ -88,7 +88,7 @@ DaveShade.matrix3 = class {
     }
 
     //Advanced transformations
-    determinant() {
+    get determinant() {
         //We are doing the diagonal method,
         //though I do have the more traditional method commented out below
         return (
@@ -120,7 +120,7 @@ DaveShade.matrix3 = class {
         const mzz = (this.xx * this.yy - this.yx * this.xy);
         
         //Get the inverse determinant and transpose.
-        const inv = 1 / this.determinant();
+        const inv = 1 / this.determinant;
         return new DaveShade.matrix3(
             inv * mxx, inv * mxy, inv * mxz,
             inv * myx, inv * myy, inv * myz,
@@ -128,7 +128,7 @@ DaveShade.matrix3 = class {
         );
     }
 
-    get array() {
+    get _UNIFORM_VALUE_() {
         return [
             this.xx, this.xy, this.xz,
             this.yx, this.yy, this.yz,
