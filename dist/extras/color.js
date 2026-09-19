@@ -3,7 +3,15 @@ DaveShade.color = class {
     #r = 0; #g = 0; #b = 0; #a = 0;
     
     //Keeping the color clean
+    set r(v) { this.#r = Math.max(0, Math.min(DaveShade.cleanNumber(v), 255)) | 0 } get r() { return this.#r}
+    set g(v) { this.#g = Math.max(0, Math.min(DaveShade.cleanNumber(v), 255)) | 0 } get g() { return this.#g}
+    set b(v) { this.#b = Math.max(0, Math.min(DaveShade.cleanNumber(v), 255)) | 0 } get b() { return this.#b}
+    set a(v) { this.#a = Math.max(0, Math.min(DaveShade.cleanNumber(v), 255)) | 0 } get a() { return this.#a}
     
+
+    //Then the DS value
+    get _UNIFORM_VALUE_() { return [ this.r / 255, this.g / 255, this.b / 255, this.a / 255 ]; }
+
     constructor(r, g, b, a) {
         this.r = r;
         this.g = g;
@@ -76,5 +84,5 @@ DaveShade.color.hex = (hex) => {
     }
 
     //Convert to 0-1 range and send back as color
-    return new DaveShade.color(r / 255, g / 255, b / 255, a / 255);
+    return new DaveShade.color(r, g, b, a);
 }
