@@ -53,6 +53,12 @@ DaveShade.matrix3 = class {
     }
 
     multiplyVector(x, y, z) {
+        //If we are a vector, correct our course.
+        if (DaveShade.existsAndIs(x, DaveShade.vector3))
+            return new DaveShade.vector3(...this.multiplyVector(x.x, x.y, x.z));
+        else if (DaveShade.existsAndIs(x, DaveShade.vector2))
+            return new DaveShade.vector2(...this.multiplyVector(x.x, x.y, 1));
+
         if (typeof z != "number") z = 1;
 
         return [
@@ -137,6 +143,7 @@ DaveShade.matrix3 = class {
     }
 
     get translation() {
+        if (DaveShade.vector2) return new DaveShade.vector2(this.xz, this.yz);
         return [ this.xz, this.yz ];
     }
 
@@ -146,7 +153,11 @@ DaveShade.matrix3 = class {
         let xx = this.xx; let xy = this.xy;
         let yx = this.yx; let yy = this.yy;
 
-        return [ Math.sqrt(xx * xx + xy * xy), Math.sqrt(yx * yx + yy * yy) ];
+        const calculated = [ Math.sqrt(xx * xx + xy * xy), Math.sqrt(yx * yx + yy * yy) ];
+
+        //Return in the best form
+        if (DaveShade.vector2) return new DaveShade.vector2(...calculated);
+        return calculated;
     }
 }
 

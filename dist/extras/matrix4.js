@@ -45,7 +45,9 @@ DaveShade.matrix4 = class {
 
     //Simple math
     multiply(multiplicator) {
+        //Otherwise, multiply normally
         const resultor = this.duplicate();
+
         if (multiplicator instanceof DaveShade.matrix4) {
             resultor.xx = this.xx * multiplicator.xx + this.xy * multiplicator.yx + this.xz * multiplicator.zx + this.xw * multiplicator.wx;
             resultor.xy = this.xx * multiplicator.xy + this.xy * multiplicator.yy + this.xz * multiplicator.zy + this.xw * multiplicator.wy;
@@ -72,7 +74,13 @@ DaveShade.matrix4 = class {
     }
 
     multiplyVector(x, y, z, w) {
-        if (typeof w != "number") w = 1;
+        //If we are a vector, correct our course.
+        if (DaveShade.existsAndIs(x, DaveShade.vector4)) 
+            return new DaveShade.vector4(...this.multiplyVector(x.x, x.y, x.z, x.w));
+        else if (DaveShade.existsAndIs(x, DaveShade.vector3))
+            return new DaveShade.vector3(...this.multiplyVector(x.x, x.y, x.z, 1));
+
+        else if (typeof w != "number") w = 1;
 
         return [
             x * this.xx + y * this.xy + z * this.xz + w * this.xw,
@@ -310,6 +318,7 @@ DaveShade.matrix4 = class {
     }
 
     get translation() {
+        if (DaveShade.vector3) return new DaveShade.vector3(this.xw, this.yw, this.zw);
         return [ this.xw, this.yw, this.zw ];
     }
 
@@ -318,11 +327,15 @@ DaveShade.matrix4 = class {
         const yx = this.yx; const yy = this.yy; const yz = this.yz;
         const zx = this.zx; const zy = this.zy; const zz = this.zz;
 
-        return [
+        const calculated = [
             Math.sqrt(xx * xx + xy * xy + xz * xz),
             Math.sqrt(yx * yx + yy * yy + yz * yz),
             Math.sqrt(zx * zx + zy * zy + zz * zz),
         ];
+
+        //Return in the best form
+        if (DaveShade.vector3) return new DaveShade.vector3(...calculated);
+        return calculated;
     }
 
     //Extract the rotation matrix

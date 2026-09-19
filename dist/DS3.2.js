@@ -30,7 +30,7 @@ window.DaveShade = {
     VERSION: "3.2.1",
 };
 
-//Just a small cust helper
+//Just some small helpers for custom types
 DaveShade.cleanNumber = (input, isDown) => {
     if (Array.isArray(input) && !isDown) {
         const output = [...input]
@@ -56,6 +56,8 @@ DaveShade.cleanNumber = (input, isDown) => {
         default: return 0;
     }
 }
+
+DaveShade.existsAndIs = (obj, declaration) => { return declaration && obj instanceof declaration; }
 
 //Module Creation
 // prettier-ignore
