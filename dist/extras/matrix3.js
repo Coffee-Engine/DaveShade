@@ -1,4 +1,4 @@
-DaveShade.matrix3 = class {
+DaveShade.Matrix3 = class {
     //Private stored values
     #xx = 0; #xy = 0; #xz = 0;
     #yx = 0; #yy = 0; #yz = 0;
@@ -25,7 +25,7 @@ DaveShade.matrix3 = class {
     }
 
     duplicate() {
-        return new DaveShade.matrix3(
+        return new DaveShade.Matrix3(
             this.xx, this.xy, this.xz,
             this.yx, this.yy, this.yz,
             this.zx, this.zy, this.zz
@@ -35,7 +35,7 @@ DaveShade.matrix3 = class {
     //Simple math
     multiply(multiplicator) {
         const resultor = this.duplicate();
-        if (multiplicator instanceof DaveShade.matrix3) {
+        if (multiplicator instanceof DaveShade.Matrix3) {
             resultor.xx = this.xx * multiplicator.xx + this.xy * multiplicator.yx + this.xz * multiplicator.zx;
             resultor.xy = this.xx * multiplicator.xy + this.xy * multiplicator.yy + this.xz * multiplicator.zy;
             resultor.xz = this.xx * multiplicator.xz + this.xy * multiplicator.yz + this.xz * multiplicator.zz;
@@ -54,10 +54,10 @@ DaveShade.matrix3 = class {
 
     multiplyVector(x, y, z) {
         //If we are a vector, correct our course.
-        if (DaveShade.existsAndIs(x, DaveShade.vector3))
-            return new DaveShade.vector3(...this.multiplyVector(x.x, x.y, x.z));
-        else if (DaveShade.existsAndIs(x, DaveShade.vector2))
-            return new DaveShade.vector2(...this.multiplyVector(x.x, x.y, 1));
+        if (DaveShade.existsAndIs(x, DaveShade.Vector3))
+            return new DaveShade.Vector3(...this.multiplyVector(x.x, x.y, x.z));
+        else if (DaveShade.existsAndIs(x, DaveShade.Vector2))
+            return new DaveShade.Vector2(...this.multiplyVector(x.x, x.y, 1));
 
         if (typeof z != "number") z = 1;
 
@@ -70,7 +70,7 @@ DaveShade.matrix3 = class {
 
     //Simple transformations
     translate(x, y) {
-        return this.multiply(new DaveShade.matrix3(
+        return this.multiply(new DaveShade.Matrix3(
             1, 0, x,
             0, 1, y,
             0, 0, 1
@@ -78,7 +78,7 @@ DaveShade.matrix3 = class {
     }
 
     rotate(angle) {
-        return this.multiply(new DaveShade.matrix3(
+        return this.multiply(new DaveShade.Matrix3(
             Math.cos(angle), Math.sin(angle), 0,
             -Math.sin(angle), Math.cos(angle), 0,
             0, 0, 1
@@ -86,7 +86,7 @@ DaveShade.matrix3 = class {
     }
 
     scale(x, y) {
-        return this.multiply(new DaveShade.matrix3(
+        return this.multiply(new DaveShade.Matrix3(
             x, 0, 0,
             0, y, 0,
             0, 0, 1
@@ -127,7 +127,7 @@ DaveShade.matrix3 = class {
         
         //Get the inverse determinant and transpose.
         const inv = 1 / this.determinant;
-        return new DaveShade.matrix3(
+        return new DaveShade.Matrix3(
             inv * mxx, inv * mxy, inv * mxz,
             inv * myx, inv * myy, inv * myz,
             inv * mzx, inv * mzy, inv * mzz
@@ -143,7 +143,7 @@ DaveShade.matrix3 = class {
     }
 
     get translation() {
-        if (DaveShade.vector2) return new DaveShade.vector2(this.xz, this.yz);
+        if (DaveShade.Vector2) return new DaveShade.Vector2(this.xz, this.yz);
         return [ this.xz, this.yz ];
     }
 
@@ -156,14 +156,14 @@ DaveShade.matrix3 = class {
         const calculated = [ Math.sqrt(xx * xx + xy * xy), Math.sqrt(yx * yx + yy * yy) ];
 
         //Return in the best form
-        if (DaveShade.vector2) return new DaveShade.vector2(...calculated);
+        if (DaveShade.Vector2) return new DaveShade.Vector2(...calculated);
         return calculated;
     }
 }
 
 // Just a simple identity matrix
-DaveShade.matrix3.identity = () => {
-    return new DaveShade.matrix3(
+DaveShade.Matrix3.identity = () => {
+    return new DaveShade.Matrix3(
         1, 0, 0,
         0, 1, 0,
         0, 0, 1

@@ -1,4 +1,4 @@
-DaveShade.matrix4 = class {
+DaveShade.Matrix4 = class {
     //Private stored values
     #xx = 0; #xy = 0; #xz = 0; #xw = 0;
     #yx = 0; #yy = 0; #yz = 0; #yw = 0;
@@ -35,7 +35,7 @@ DaveShade.matrix4 = class {
     }
 
     duplicate() {
-        return new DaveShade.matrix4(
+        return new DaveShade.Matrix4(
             this.xx, this.xy, this.xz, this.xw,
             this.yx, this.yy, this.yz, this.yw,
             this.zx, this.zy, this.zz, this.zw,
@@ -48,7 +48,7 @@ DaveShade.matrix4 = class {
         //Otherwise, multiply normally
         const resultor = this.duplicate();
 
-        if (multiplicator instanceof DaveShade.matrix4) {
+        if (multiplicator instanceof DaveShade.Matrix4) {
             resultor.xx = this.xx * multiplicator.xx + this.xy * multiplicator.yx + this.xz * multiplicator.zx + this.xw * multiplicator.wx;
             resultor.xy = this.xx * multiplicator.xy + this.xy * multiplicator.yy + this.xz * multiplicator.zy + this.xw * multiplicator.wy;
             resultor.xz = this.xx * multiplicator.xz + this.xy * multiplicator.yz + this.xz * multiplicator.zz + this.xw * multiplicator.wz;
@@ -75,10 +75,10 @@ DaveShade.matrix4 = class {
 
     multiplyVector(x, y, z, w) {
         //If we are a vector, correct our course.
-        if (DaveShade.existsAndIs(x, DaveShade.vector4)) 
-            return new DaveShade.vector4(...this.multiplyVector(x.x, x.y, x.z, x.w));
-        else if (DaveShade.existsAndIs(x, DaveShade.vector3))
-            return new DaveShade.vector3(...this.multiplyVector(x.x, x.y, x.z, 1));
+        if (DaveShade.existsAndIs(x, DaveShade.Vector4)) 
+            return new DaveShade.Vector4(...this.multiplyVector(x.x, x.y, x.z, x.w));
+        else if (DaveShade.existsAndIs(x, DaveShade.Vector3))
+            return new DaveShade.Vector3(...this.multiplyVector(x.x, x.y, x.z, 1));
 
         else if (typeof w != "number") w = 1;
 
@@ -92,7 +92,7 @@ DaveShade.matrix4 = class {
 
     //Simple transformations
     translate(x, y, z) {
-        return this.multiply(new DaveShade.matrix4(
+        return this.multiply(new DaveShade.Matrix4(
             1, 0, 0, x,
             0, 1, 0, y,
             0, 0, 1, z,
@@ -101,7 +101,7 @@ DaveShade.matrix4 = class {
     }
 
     scale(x, y, z) {
-        return this.multiply(new DaveShade.matrix4(
+        return this.multiply(new DaveShade.Matrix4(
             x, 0, 0, 0,
             0, y, 0, 0,
             0, 0, z, 0,
@@ -111,7 +111,7 @@ DaveShade.matrix4 = class {
 
     //Rotations
     rotateX(angle) {
-        return this.multiply(new DaveShade.matrix4(
+        return this.multiply(new DaveShade.Matrix4(
             1, 0, 0, 0,
             0, Math.cos(angle), Math.sin(angle), 0,
             0, -Math.sin(angle), Math.cos(angle), 0,
@@ -120,7 +120,7 @@ DaveShade.matrix4 = class {
     }
 
     rotateY(angle) {
-        return this.multiply(new DaveShade.matrix4(
+        return this.multiply(new DaveShade.Matrix4(
             Math.cos(angle), 0, Math.sin(angle), 0,
             0, 1, 0, 0,
             -Math.sin(angle), 0, Math.cos(angle), 0,
@@ -129,7 +129,7 @@ DaveShade.matrix4 = class {
     }
 
     rotateZ(angle) {
-        return this.multiply(new DaveShade.matrix4(
+        return this.multiply(new DaveShade.Matrix4(
             Math.cos(angle), Math.sin(angle), 0, 0,
             -Math.sin(angle), Math.cos(angle), 0, 0,
             0, 0, 1, 0,
@@ -151,7 +151,7 @@ DaveShade.matrix4 = class {
         var yy = y * x2; let yz = y * y2; let zz = z * x2;
         var wx = w * x2; let wy = w * y2; let wz = w * x2;
 
-        return this.multiply(new DaveShade.matrix4(
+        return this.multiply(new DaveShade.Matrix4(
             1 - (yy + zz), xy + wz, xz - wy, 0,
             xy - wz, 1 - (xx + zz), yz + wx, 0,
             xz + wy, yz - wx, 1 - (xx + yy), 0,
@@ -300,7 +300,7 @@ DaveShade.matrix4 = class {
         //Get the inverse of the determinant
         const inv = 1 / (this.xx * xx - this.xy * yx + this.xz * zx - this.xw * wx);
 
-        return new DaveShade.matrix4(
+        return new DaveShade.Matrix4(
             xx * inv, -xy * inv, xz * inv, -xw * inv,
             -yx * inv, yy * inv, -yz * inv, yw * inv,
             zx * inv, -zy * inv, zz * inv, -zw * inv,
@@ -318,7 +318,7 @@ DaveShade.matrix4 = class {
     }
 
     get translation() {
-        if (DaveShade.vector3) return new DaveShade.vector3(this.xw, this.yw, this.zw);
+        if (DaveShade.Vector3) return new DaveShade.Vector3(this.xw, this.yw, this.zw);
         return [ this.xw, this.yw, this.zw ];
     }
 
@@ -334,7 +334,7 @@ DaveShade.matrix4 = class {
         ];
 
         //Return in the best form
-        if (DaveShade.vector3) return new DaveShade.vector3(...calculated);
+        if (DaveShade.Vector3) return new DaveShade.Vector3(...calculated);
         return calculated;
     }
 
@@ -348,14 +348,14 @@ DaveShade.matrix4 = class {
             this.zx / s, this.zy / s, this.zz / s
         ];
 
-        if (DaveShade.matrix3) return new DaveShade.matrix3(...rotationMat);
+        if (DaveShade.Matrix3) return new DaveShade.Matrix3(...rotationMat);
         return rotationMat;
     }
 }
 
 // Just a simple identity matrix
-DaveShade.matrix4.identity = () => {
-    return new DaveShade.matrix4(
+DaveShade.Matrix4.identity = () => {
+    return new DaveShade.Matrix4(
         1, 0, 0, 0,
         0, 1, 0, 0,
         0, 0, 1, 0,
@@ -364,7 +364,7 @@ DaveShade.matrix4.identity = () => {
 }
 
 //Camera stuff
-DaveShade.matrix4.projection = (FOV, aspect, near) => {
+DaveShade.Matrix4.projection = (FOV, aspect, near) => {
     const vertical = Math.tan(FOV * Math.PI / 360);
 
     //Get near and invert
@@ -372,7 +372,7 @@ DaveShade.matrix4.projection = (FOV, aspect, near) => {
     else if (near <= 0) near = 0.1; //Make sure it isn't <0
     near = 1/near;
     
-    return new DaveShade.matrix4(
+    return new DaveShade.Matrix4(
         near / (vertical * aspect * 2), 0, 0, 0,
         0, near / (vertical * 2), 0, 0,
         0, 0, 1, -1,
@@ -380,8 +380,8 @@ DaveShade.matrix4.projection = (FOV, aspect, near) => {
     );
 }
 
-DaveShade.matrix4.orthographic = (zoom, aspect) => {
-    return new DaveShade.matrix4(
+DaveShade.Matrix4.orthographic = (zoom, aspect) => {
+    return new DaveShade.Matrix4(
         zoom / aspect, 0, 0, 0,
         0, zoom, 0, 0,
         0, 0, 1, -1,

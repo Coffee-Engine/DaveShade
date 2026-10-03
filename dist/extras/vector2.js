@@ -1,4 +1,4 @@
-DaveShade.vector2 = class {
+DaveShade.Vector2 = class {
     //Private values
     #x = 0; #y = 0;
 
@@ -17,12 +17,12 @@ DaveShade.vector2 = class {
         this.y = (y === undefined) ? this.x : DaveShade.cleanNumber(y);
     }
 
-    duplicate() { return new DaveShade.vector2(this.x, this.y); }
+    duplicate() { return new DaveShade.Vector2(this.x, this.y); }
 
     //Basic arithmatic
     add(x, y) {
         //If we are adding by a vector
-        if (x instanceof DaveShade.vector2) {
+        if (x instanceof DaveShade.Vector2) {
             const returned = this.duplicate();
 
             returned.x += x.x;
@@ -32,12 +32,12 @@ DaveShade.vector2 = class {
         }
         
         //If we aren't a vector 3, turn into one.
-        return this.add(new DaveShade.vector2(x, y));
+        return this.add(new DaveShade.Vector2(x, y));
     }
 
     subtract(x, y) {
         //If we are subtracting by a vector
-        if (x instanceof DaveShade.vector2) {
+        if (x instanceof DaveShade.Vector2) {
             const returned = this.duplicate();
 
             returned.x -= x.x;
@@ -47,12 +47,12 @@ DaveShade.vector2 = class {
         }
         
         //If we aren't a vector 3, turn into one.
-        return this.subtract(new DaveShade.vector2(x, y));
+        return this.subtract(new DaveShade.Vector2(x, y));
     }
 
     multiply(x, y) {
         //If we are multiplying by a vector
-        if (x instanceof DaveShade.vector2) {
+        if (x instanceof DaveShade.Vector2) {
             const returned = this.duplicate();
 
             returned.x *= x.x;
@@ -62,12 +62,12 @@ DaveShade.vector2 = class {
         }
 
         //If we aren't a vector 3, turn into one.
-        return this.multiply(new DaveShade.vector2(x, y));
+        return this.multiply(new DaveShade.Vector2(x, y));
     }
 
     divide(x, y) {
         //If we are dividing by a vector
-        if (x instanceof DaveShade.vector2) {
+        if (x instanceof DaveShade.Vector2) {
             const returned = this.duplicate();
 
             returned.x /= x.x;
@@ -77,12 +77,12 @@ DaveShade.vector2 = class {
         }
         
         //If we aren't a vector 3, turn into one.
-        return this.divide(new DaveShade.vector2(x, y));
+        return this.divide(new DaveShade.Vector2(x, y));
     }
 
     exponent(x, y) {
         //If we are exponentiating by a vector
-        if (x instanceof DaveShade.vector2) {
+        if (x instanceof DaveShade.Vector2) {
             const returned = this.duplicate();
 
             returned.x = Math.pow(returned.x, x.x);
@@ -92,7 +92,7 @@ DaveShade.vector2 = class {
         }
         
         //If we aren't a vector 3, turn into one.
-        return this.exponent(new DaveShade.vector2(x, y));
+        return this.exponent(new DaveShade.Vector2(x, y));
     }
 
     //Also add some shortcuts
@@ -103,17 +103,17 @@ DaveShade.vector2 = class {
 
     //comparisons, with a shorthand
     equals(x, y) {
-        if (x instanceof DaveShade.vector2) return x == this.x && y == this.y;
-        return this.equals(new DaveShade.vector2(x, y));
+        if (x instanceof DaveShade.Vector2) return x == this.x && y == this.y;
+        return this.equals(new DaveShade.Vector2(x, y));
     }
 
     dot(x, y) {
-        if (x instanceof DaveShade.vector2) {
+        if (x instanceof DaveShade.Vector2) {
             const m = this.mul(x);
             return m.x + m.y;
         }
 
-        return this.dot(new DaveShade.vector2(x, y));
+        return this.dot(new DaveShade.Vector2(x, y));
     }
 
     eql(x, y) { return this.equals(x, y); }
@@ -125,11 +125,11 @@ DaveShade.vector2 = class {
     get normalized() { return this.div(this.length); }
 
     //Stranger transformations
-    flip() { return new DaveShade.vector2(-this.x, -this.y); }
-    parallel() { return new DaveShade.vector2(this.y, -this.x); }
+    flip() { return new DaveShade.Vector2(-this.x, -this.y); }
+    parallel() { return new DaveShade.Vector2(this.y, -this.x); }
 
     rotate(a) {
-        return new DaveShade.vector2(
+        return new DaveShade.Vector2(
             this.y * Math.sin(a) + this.x * Math.cos(a),
             this.y * Math.cos(a) - this.x * Math.sin(a)
         )
@@ -137,11 +137,11 @@ DaveShade.vector2 = class {
 }
 
 //Some basic vectors and directions
-DaveShade.vector2.zero = () => { return new DaveShade.vector2(0); }
-DaveShade.vector2.one = () => { return new DaveShade.vector2(1); }
+DaveShade.Vector2.zero = () => { return new DaveShade.Vector2(0); }
+DaveShade.Vector2.one = () => { return new DaveShade.Vector2(1); }
 
-DaveShade.vector2.right = () => { return new DaveShade.vector2(1, 0); }
-DaveShade.vector2.left = () => { return new DaveShade.vector2(-1, 0); }
+DaveShade.Vector2.right = () => { return new DaveShade.Vector2(1, 0); }
+DaveShade.Vector2.left = () => { return new DaveShade.Vector2(-1, 0); }
 
-DaveShade.vector2.up = () => { return new DaveShade.vector2(0, 1); }
-DaveShade.vector2.down = () => { return new DaveShade.vector2(0, -1); }
+DaveShade.Vector2.up = () => { return new DaveShade.Vector2(0, 1); }
+DaveShade.Vector2.down = () => { return new DaveShade.Vector2(0, -1); }

@@ -1,4 +1,4 @@
-DaveShade.vector3 = class {
+DaveShade.Vector3 = class {
     //Private values
     #x = 0; #y = 0; #z = 0;
 
@@ -25,12 +25,12 @@ DaveShade.vector3 = class {
         }
     }
 
-    duplicate() { return new DaveShade.vector3(this.x, this.y, this.z); }
+    duplicate() { return new DaveShade.Vector3(this.x, this.y, this.z); }
 
     //Basic arithmatic
     add(x, y, z) {
         //If we are adding by a vector
-        if (x instanceof DaveShade.vector3) {
+        if (x instanceof DaveShade.Vector3) {
             const returned = this.duplicate();
 
             returned.x += x.x;
@@ -41,12 +41,12 @@ DaveShade.vector3 = class {
         }
         
         //If we aren't a vector 3, turn into one.
-        return this.add(new DaveShade.vector3(x, y, z));
+        return this.add(new DaveShade.Vector3(x, y, z));
     }
 
     subtract(x, y, z) {
         //If we are subtracting by a vector
-        if (x instanceof DaveShade.vector3) {
+        if (x instanceof DaveShade.Vector3) {
             const returned = this.duplicate();
 
             returned.x -= x.x;
@@ -57,12 +57,12 @@ DaveShade.vector3 = class {
         }
         
         //If we aren't a vector 3, turn into one.
-        return this.subtract(new DaveShade.vector3(x, y, z));
+        return this.subtract(new DaveShade.Vector3(x, y, z));
     }
 
     multiply(x, y, z) {
         //If we are multiplying by a vector
-        if (x instanceof DaveShade.vector3) {
+        if (x instanceof DaveShade.Vector3) {
             const returned = this.duplicate();
 
             returned.x *= x.x;
@@ -73,12 +73,12 @@ DaveShade.vector3 = class {
         }
 
         //If we aren't a vector 3, turn into one.
-        return this.multiply(new DaveShade.vector3(x, y, z));
+        return this.multiply(new DaveShade.Vector3(x, y, z));
     }
 
     divide(x, y, z) {
         //If we are dividing by a vector
-        if (x instanceof DaveShade.vector3) {
+        if (x instanceof DaveShade.Vector3) {
             const returned = this.duplicate();
 
             returned.x /= x.x;
@@ -89,12 +89,12 @@ DaveShade.vector3 = class {
         }
         
         //If we aren't a vector 3, turn into one.
-        return this.divide(new DaveShade.vector3(x, y, z));
+        return this.divide(new DaveShade.Vector3(x, y, z));
     }
 
     exponent(x, y, z) {
         //If we are exponentiating by a vector
-        if (x instanceof DaveShade.vector3) {
+        if (x instanceof DaveShade.Vector3) {
             const returned = this.duplicate();
 
             returned.x = Math.pow(returned.x, x.x);
@@ -105,7 +105,7 @@ DaveShade.vector3 = class {
         }
         
         //If we aren't a vector 3, turn into one.
-        return this.exponent(new DaveShade.vector3(x, y, z));
+        return this.exponent(new DaveShade.Vector3(x, y, z));
     }
 
     //Also add some shortcuts
@@ -116,17 +116,17 @@ DaveShade.vector3 = class {
 
     //comparisons, with a shorthand
     equals(x, y, z) {
-        if (x instanceof DaveShade.vector3) return x == this.x && y == this.y && z == this.z;
-        return this.equals(new DaveShade.vector3(x, y, z));
+        if (x instanceof DaveShade.Vector3) return x == this.x && y == this.y && z == this.z;
+        return this.equals(new DaveShade.Vector3(x, y, z));
     }
 
     dot(x, y, z) {
-        if (x instanceof DaveShade.vector3) {
+        if (x instanceof DaveShade.Vector3) {
             const m = this.mul(x);
             return m.x + m.y + m.z;
         }
 
-        return this.dot(new DaveShade.vector3(x, y, z));
+        return this.dot(new DaveShade.Vector3(x, y, z));
     }
 
     eql(x, y, z) { return this.equals(x, y, z); }
@@ -138,23 +138,23 @@ DaveShade.vector3 = class {
     get normalized() { return this.div(this.length); }
 
     //Stranger transformations
-    flip() { return new DaveShade.vector3(-this.x, -this.y, -this.z); }
+    flip() { return new DaveShade.Vector3(-this.x, -this.y, -this.z); }
     
     cross(x, y, z) {
         //If we are a vector, start.
-        if (x instanceof DaveShade.vector3) return new DaveShade.vector3(
+        if (x instanceof DaveShade.Vector3) return new DaveShade.Vector3(
             this.y * x.z - this.z * x.y,
             this.z * x.x - this.x * x.z,
             this.x * x.y - this.y * x.x
         );
 
         //Otherwise, convert
-        return this.cross(new DaveShade.vector3(x, y, z));
+        return this.cross(new DaveShade.Vector3(x, y, z));
     }
 
     //Simple rotations, since we may want to rotate a vector 3
     rotateX(a) {
-        return new DaveShade.vector3(
+        return new DaveShade.Vector3(
             this.x,
             this.z * Math.sin(a) + this.y * Math.cos(a),
             this.z * Math.cos(a) - this.y * Math.sin(a)
@@ -162,7 +162,7 @@ DaveShade.vector3 = class {
     }
 
     rotateY(a) {
-        return new DaveShade.vector3(
+        return new DaveShade.Vector3(
             this.z * Math.sin(a) + this.x * Math.cos(a),
             this.y,
             this.z * Math.cos(a) - this.x * Math.sin(a)
@@ -170,7 +170,7 @@ DaveShade.vector3 = class {
     }
 
     rotateZ(a) {
-        return new DaveShade.vector3(
+        return new DaveShade.Vector3(
             this.y * Math.sin(a) + this.x * Math.cos(a),
             this.y * Math.cos(a) - this.x * Math.sin(a),
             this.z
@@ -179,14 +179,14 @@ DaveShade.vector3 = class {
 }
 
 //Some basic vectors and directions
-DaveShade.vector3.zero = () => { return new DaveShade.vector3(0); }
-DaveShade.vector3.one = () => { return new DaveShade.vector3(1); }
+DaveShade.Vector3.zero = () => { return new DaveShade.Vector3(0); }
+DaveShade.Vector3.one = () => { return new DaveShade.Vector3(1); }
 
-DaveShade.vector3.right = () => { return new DaveShade.vector3(1, 0, 0); }
-DaveShade.vector3.left = () => { return new DaveShade.vector3(-1, 0, 0); }
+DaveShade.Vector3.right = () => { return new DaveShade.Vector3(1, 0, 0); }
+DaveShade.Vector3.left = () => { return new DaveShade.Vector3(-1, 0, 0); }
 
-DaveShade.vector3.up = () => { return new DaveShade.vector3(0, 1, 0); }
-DaveShade.vector3.down = () => { return new DaveShade.vector3(0, -1, 0); }
+DaveShade.Vector3.up = () => { return new DaveShade.Vector3(0, 1, 0); }
+DaveShade.Vector3.down = () => { return new DaveShade.Vector3(0, -1, 0); }
 
-DaveShade.vector3.forward = () => { return new DaveShade.vector3(0, 0, 1); }
-DaveShade.vector3.backward = () => { return new DaveShade.vector3(0, 0, -1); }
+DaveShade.Vector3.forward = () => { return new DaveShade.Vector3(0, 0, 1); }
+DaveShade.Vector3.backward = () => { return new DaveShade.Vector3(0, 0, -1); }
