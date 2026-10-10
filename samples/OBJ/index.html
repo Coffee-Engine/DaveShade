@@ -9,12 +9,19 @@
 <body>
     <canvas id="canvas" width="480" height="360"></canvas>
     <div class="info">
-        <p>This demonstrates basic 3D</p>
-        <p class="keynote">Note that a matrix library is used in this demo.
-        You can add <code>DaveShade.matrix3</code> and <code>DaveShade.Matrix4</code> to your DaveShade instance!
-        Otherwise this demo is the same as <a href="../cube/">Cube</a>.
+        <p>This demonstrates the OBJ loader</p>
+        <p class="keynote">
+            Note that this is the same as <a href="../matrixCube">Matrix Cube</a>, but with an OBJ loader.
+            You can add <code>DaveShadeInstance.parseOBJ</code> to your project to easily parse OBJ files.
         </p>
         <p>You can find the source code <a href="main.js">here</a>!</p>
+        <p>You can find the meshes <a href="meshList.html">here</a>!</p>
+        <select id="meshSelector">
+            <option value="models/torus.obj">Torus</option>
+            <option value="models/sphere.obj">Sphere</option>
+            <option value="models/thing.obj">Thing</option>
+            <option value="models/exclamation.obj">Exclamation Mark</option>
+        </select>
     </div>
     <script src="../../dist/DS3.3.js"></script> <!-- Replace this with wherever your DaveShade distribution is-->
     <script src="../../dist/extras/matrix4.js"></script> <!-- Replace this with wherever your DaveShade distribution is-->

@@ -9,7 +9,10 @@ DaveShade.Module.prototype.parseOBJ = function (url, settings) {
             uv: "a_texcoord",
             color: "a_color",
             normal: "a_normal",
-            useMesh: false
+            oneSet: false,
+
+            positionIsVec4 : false,
+            colorIsVec4: false
         }, settings);
 
         //Fetch the obj as text
@@ -63,15 +66,31 @@ DaveShade.Module.prototype.parseOBJ = function (url, settings) {
                 //Unless it is just v, we need extra parsing for v
                 case "v": {
                     //Support W in vertex format
-                    if (vertex.length == 5) vertex.push([ line[1] / line[4], line[2] / line[4], line[3] / line[4] ]);
+                    if (line.length == 5) {
+                        if (settings.positionIsVec4) vertex.push([ line[1], line[2], line[3], line[4] ]);
+                        else vertex.push([ line[1] / line[4], line[2] / line[4], line[3] / line[4] ]);
+
+                        if (settings.colorIsVec4) color.push([ 1, 1, 1, 1 ]);
+                        else color.push([ 1, 1, 1 ]);
+                    }
                     else {
                         //Otherwise just push the normal vertex
-                        vertex.push([ line[1], line[2], line[3] ]);
+                        if (settings.positionIsVec4) vertex.push([ line[1], line[2], line[3], 1 ]);
+                        else vertex.push([ line[1], line[2], line[3] ]);
                     
-                        //Support colors through the xyz rgb format with optional rgba (uncommon, but would be useful)
-                        if (vertex.length == 8) color.push([ line[1], line[2], line[3], line[4] ]);
-                        else if (vertex.length == 7) color.push([ line[1], line[2], line[3], 1 ]);
-                        else color.push([ 1, 1, 1, 1 ]);
+                        //Support colors through the xyz rgb format with optional rgba (uncommon, but could be useful)
+                        //We also have to differentiate between color being vec3 or vec4
+                        if (settings.colorIsVec4) {
+                            if (line.length == 8) color.push([ line[4], line[5], line[6], line[7] ]);
+                            else if (line.length == 7) color.push([ line[4], line[5], line[6], 1 ]);
+                            else color.push([ 1, 1, 1, 1 ]);
+                        }
+                        else {
+                            //If we are a vec3 and we encounter rgba multiply rgb by a
+                            if (line.length == 8) color.push([ line[4] * line[7], line[5] * line[7], line[6] * line[7] ]);
+                            else if (line.length == 7) color.push([ line[4], line[5], line[6] ]);
+                            else color.push([ 1, 1, 1 ]);
+                        }
                     }
                     break;
                 }
@@ -171,20 +190,39 @@ DaveShade.Module.prototype.parseOBJ = function (url, settings) {
                             //And push it to the mesh
                             writing[settings.normal].push(crs, crs, crs);
                         }
-                    }
 
-                    writing.POINT_COUNT += 3;
+                        writing.POINT_COUNT += 3;
+                    }
                     break;
                 }
 
                 //And since we can have multiple materials allow multiple sub-meshes
-                case "usemtl": { setActiveSubmesh(line.splice(1).join(" ")); }
+                case "usemtl": { if (!settings.oneSet) setActiveSubmesh(line.splice(1).join(" ")); }
             
                 default:
                     break;
             }
         }
 
-        resolve(this.meshFromJSON(parsed));
+        //If we are using one set, return one set
+        if (settings.oneSet) {
+            const returned = this.buffersFromJSON(parsed.default);
+            returned.POINT_COUNT = parsed.default.POINT_COUNT;
+
+            resolve(returned)
+        }
+        //Otherwise parse all sets
+        else {
+            //Run through and parse the buffers and return the final part.
+            const returned = {};
+            for (let key in parsed) {
+                if (parsed[key].POINT_COUNT == 0) continue;
+
+                returned[key] = this.buffersFromJSON(parsed[key]);
+                returned[key].POINT_COUNT = parsed[key].POINT_COUNT;
+            }
+
+            resolve(returned);
+        }
     });
 }

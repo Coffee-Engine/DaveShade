@@ -3,5 +3,6 @@
     ["Vector 3", "vector3.js", true],
     ["Vector 4", "vector4.js", true],
     ["3x3 Matrix", "matrix3.js", true],
-    ["4x4 Matrix", "matrix4.js", true]
+    ["4x4 Matrix", "matrix4.js", true],
+    ["OBJ loader", "OBJ.js", false]
 ]
