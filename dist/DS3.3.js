@@ -27,7 +27,7 @@
 window.DaveShade = {
     MODULES: [],
     INDICE_IDENTIFIER: "__INDICIES__",
-    VERSION: "3.3",
+    VERSION: "3.3.1",
 };
 
 //Just some small helpers for custom types
@@ -77,6 +77,7 @@ DaveShade.Module = class {
     SHADERS = [];
     TEXTURES = [];
     BUFFERS = [];
+    MESHES = [];
     ATTRIBUTE_SETS = [];
     FRAMEBUFFERS = [];
     ATTRIBUTE_BINDINGS = {};
@@ -137,6 +138,39 @@ DaveShade.Module = class {
     modifyAttributeSet(ATTRIBUTE_SET, NEW_DATA) { this.__DEFINE_ERROR("modifyAttributeSet") }
     disposeAttributeSet(ATTRIBUTE_SET) { this.__DEFINE_ERROR("disposeAttributeSet"); }
 
+    //Since meshes are groups of attribute data,
+    //most of the actual code for them can be contained within the base module.
+    meshFromJSON(MESH_JSON) {
+        const returned = new DaveShade.Mesh();
+
+        //Try to convert it to a string
+        if (typeof MESH_JSON == "string") {
+            try { MESH_JSON = JSON.parse(MESH_JSON); }
+            catch (error) { console.error(`Mesh JSON string couldn't be parsed!\n${error}`); } 
+        }
+
+        if (typeof MESH_JSON != "object") {
+            console.error("Mesh JSON isn't valid!");
+            return returned;
+        }
+
+        //Loop through mesh json and add keys
+        for (let key in MESH_JSON) {
+            const submesh = MESH_JSON[key];
+            const pointCount = DaveShade.cleanNumber(submesh.POINT_COUNT);
+            //Make sure we have some potential mesh data
+            if (typeof submesh == "object" && pointCount > 0) {
+                returned.SUBMESHES[key] = this.buffersFromJSON(submesh);
+                returned.SUBMESHES[key].POINT_COUNT = pointCount;
+            }
+        }
+
+        //Finally get the keys for the submeshes
+        returned.KEYS = Object.keys(returned.SUBMESHES);
+
+        return returned;
+    }
+
     changeBufferData(BUFFER, NEW_DATA, IS_INDICES) { this.__DEFINE_ERROR("changeBufferData"); }
     disposeBuffer(BUFFER) { this.__DEFINE_ERROR("disposeBuffer"); }
 
@@ -155,6 +189,7 @@ DaveShade.Module = class {
         while (this.SHADERS.length > 0) { this.disposeShader(this.SHADERS[0]); }
         while (this.TEXTURES.length > 0) { this.disposeTexture(this.TEXTURES[0]); }
         while (this.BUFFERS.length > 0) { this.disposeBuffer(this.BUFFERS[0]); }
+        while (this.MESHES.length > 0) { this.disposeMesh(this.MESHES[0]); }
         while (this.ATTRIBUTE_SETS.length > 0) { this.disposeAttributeSet(this.ATTRIBUTE_SETS[0]); }
         while (this.FRAMEBUFFERS.length > 0) { this.disposeFramebuffer(this.FRAMEBUFFERS[0]); }
         
@@ -303,6 +338,22 @@ DaveShade.AttributeSet = class {
     dispose() { this.PARENT_MODULE.disposeAttributeSet(this); }
     setData(NEW_DATA) { this.PARENT_MODULE.modifyAttributeSet(this, NEW_DATA); }
 };
+
+DaveShade.Mesh = class {
+    SUBMESHES = {};
+    KEYS = [];
+    PARENT_MODULE = null;
+
+    dispose() {
+        //Call disposal on submeshes which should all be AttributeSets
+        for (let i = 0; i < this.KEYS.length; i++) {
+            const key = this.KEYS[i];
+            if (this.SUBMESHES[key] instanceof DaveShade.AttributeSet) this.SUBMESHES[key].dispose();
+        }
+
+        this.PARENT_MODULE.disposeMesh(this);
+    }
+}
 
 DaveShade.Framebuffer = class {
     ATTACHMENTS = [];
@@ -979,6 +1030,9 @@ DaveShade.WebGLModule = class extends DaveShade.Module {
 
         //Loop through the keys converting each one
         for (const key in ATTRIBUTE_JSON) {
+            //Make sure we have some form of object, EG, Array, Float32Array, or another
+            if (typeof ATTRIBUTE_JSON[key] != "object") continue;
+
             returned.ATTRIBUTES[key] = this.createBufferData(ATTRIBUTE_JSON[key], key == DaveShade.INDICE_IDENTIFIER);
             returned.KEYS.push(key);
         }

@@ -1,12 +1,15 @@
 //Add parseOBJ as a function in the default module class
-DaveShade.Module.prototype.parseOBJ = async (url, settings) => {
+//I don't like this, but using an arrow function won't bind this?
+//For some reason, it's an odd JS standard
+DaveShade.Module.prototype.parseOBJ = function (url, settings) {
     return new Promise(async (resolve, reject) => {
         //Make sure we have all available properties mapped
         settings = Object.assign({
             position: "a_position",
             uv: "a_texcoord",
             color: "a_color",
-            normal: "a_normal"
+            normal: "a_normal",
+            useMesh: false
         }, settings);
 
         //Fetch the obj as text
@@ -20,37 +23,29 @@ DaveShade.Module.prototype.parseOBJ = async (url, settings) => {
         const normal = [];
 
         //Ready the final model data
+        //We aren't using indices since that is kinda ridiculous for OBJ file's structure
+        //And webGL's indice structure
         const parsed = {};
-        const createdPoints = {};
 
-        //Create arrays in parsed
-        parsed[settings.position] = [];
-        parsed[settings.uv] = [];
-        parsed[settings.color] = [];
-        parsed[settings.normal] = [];
-        parsed[DaveShade.INDICE_IDENTIFIER] = [];
+        let writing;
+        const setActiveSubmesh = (name) => {
+            if (parsed[name]) {
+                writing = parsed[name];
+                return parsed[name];
+            }
 
-        const parsePoint = (data) => {
-            const id = data.join("/");
+            writing = {};
+            writing[settings.position] = [];
+            writing[settings.uv] = [];
+            writing[settings.color] = [];
+            writing[settings.normal] = [];
+            writing.POINT_COUNT = 0;
 
-            //Correlate the point to the created points
-            if (createdPoints[id]) return createdPoints[id];
-            
-            createdPoints[id] = parsed[DaveShade.INDICE_IDENTIFIER].length;
-
-            //Push position and color
-            parsed[settings.position].push(vertex[data[0] - 1]);
-            parsed[settings.color].push(color[data[0] - 1]);
-
-            //And if we have them push texcoord and normal
-            //Otherwise push a default for texcoord
-            if (data[1] > 0) parsed[settings.uv].push(texcoord[data[1] - 1]);
-            else parsed[settings.uv].push([ 0, 0 ]);
-
-            if (data[2] > 0) parsed[settings.position].push(normal[data[2] - 1]);
-
-            return createdPoints[id];
+            parsed[name] = writing;
+            return writing;
         }
+
+        setActiveSubmesh("default");
 
         //Parse through the file
         for (let i = 0; i < lines.length; i++) {
@@ -84,13 +79,13 @@ DaveShade.Module.prototype.parseOBJ = async (url, settings) => {
                 case "vn": { normal.push([ line[1], line[2], line[3] ]); break; }
                 case "vt": { texcoord.push([ line[1], line[2] ]); break; }
 
-                //For faces
+                //For faces we need to do some leg-work due to the way everything is formatted!
                 case "f": {
                     //Parse the points in the face
                     line = line.map((v, i) => {
                         //Parse the point values
                         if (i != 0) {
-                            const point = v.split("/").map((a) => DaveShade.cleanNumber(a));
+                            const point = v.split("/").map((a) => (DaveShade.cleanNumber(a) - 1));
                             return point;
                         }
                         return v;
@@ -98,16 +93,98 @@ DaveShade.Module.prototype.parseOBJ = async (url, settings) => {
 
                     //Now triangulate the face,
                     //This is due to the obj standard not specifying triangles
-                    const anchorPoint = parsePoint(line[1]);
+                    const primary = line[1];
                     for (let p = 1; p < line.length - 2; p++) {
-                        
+                        //Get the other points
+                        const secondary = line[p + 1];
+                        const tertiary = line[p + 2];
+
+                        //Push position and color for all three points
+                        writing[settings.position].push(
+                            vertex[primary[0]],
+                            vertex[secondary[0]],
+                            vertex[tertiary[0]]
+                        );
+
+                        writing[settings.color].push(
+                            color[primary[0]],
+                            color[secondary[0]],
+                            color[tertiary[0]]
+                        );
+
+                        //And if we have them push texcoord and normal
+                        //Otherwise push a default for texcoord
+                        if (
+                            primary[1] == -1 &&
+                            secondary[1] == -1 &&
+                            tertiary[1] == -1
+                        ) writing[settings.uv].push(
+                            texcoord[primary[1]],
+                            texcoord[secondary[1]],
+                            texcoord[tertiary[1]]
+                        );
+                        else writing[settings.uv].push([ 0, 0 ], [ 0, 0 ], [ 0, 0 ]);
+
+                        //Okay, so this one is interesting, if we
+                        //don't have a normal, we have to calculate one via cross product
+                        if (
+                            primary[2] != -1 &&
+                            secondary[2] != -1 &&
+                            tertiary[2] != -1
+                        ) writing[settings.normal].push(
+                            normal[primary[2]],
+                            normal[secondary[2]],
+                            normal[tertiary[2]],
+                        );
+                        else {
+                            //First we need to gather the 3 positional values of the points
+                            const a = vertex[primary[0]];
+                            const b = vertex[secondary[0]];
+                            const c = vertex[tertiary[0]];
+                            
+                            //Then we get a-b and a-c
+                            const ab = [
+                                b[0] - a[0],
+                                b[1] - a[1],
+                                b[2] - a[2],
+                            ];
+
+                            const ac = [
+                                c[0] - a[0],
+                                c[1] - a[1],
+                                c[2] - a[2],
+                            ]
+
+                            //Then calculate the cross product
+                            const crs = [
+                                ab[1] * ac[2] - ab[2] * ac[1],
+                                ab[2] * ac[0] - ab[0] * ac[2],
+                                ab[0] * ac[1] - ab[1] * ac[0]
+                            ]
+
+                            //Normalize it
+                            const length = Math.sqrt((crs[0] * crs[0]) + (crs[1] * crs[1]) + (crs[2] * crs[2]));
+                            crs[0] /= length;
+                            crs[1] /= length;
+                            crs[2] /= length;
+
+                            //And push it to the mesh
+                            writing[settings.normal].push(crs, crs, crs);
+                        }
                     }
+
+                    writing.POINT_COUNT += 3;
                     break;
                 }
+
+                //And since we can have multiple materials allow multiple sub-meshes
+                case "usemtl": { setActiveSubmesh(line.splice(1).join(" ")); }
             
                 default:
                     break;
             }
         }
+
+        resolve(this.meshFromJSON(parsed));
     });
 }
