@@ -77,7 +77,6 @@ DaveShade.Module = class {
     SHADERS = [];
     TEXTURES = [];
     BUFFERS = [];
-    MESHES = [];
     ATTRIBUTE_SETS = [];
     FRAMEBUFFERS = [];
     ATTRIBUTE_BINDINGS = {};
@@ -156,7 +155,6 @@ DaveShade.Module = class {
         while (this.SHADERS.length > 0) { this.disposeShader(this.SHADERS[0]); }
         while (this.TEXTURES.length > 0) { this.disposeTexture(this.TEXTURES[0]); }
         while (this.BUFFERS.length > 0) { this.disposeBuffer(this.BUFFERS[0]); }
-        while (this.MESHES.length > 0) { this.disposeMesh(this.MESHES[0]); }
         while (this.ATTRIBUTE_SETS.length > 0) { this.disposeAttributeSet(this.ATTRIBUTE_SETS[0]); }
         while (this.FRAMEBUFFERS.length > 0) { this.disposeFramebuffer(this.FRAMEBUFFERS[0]); }
         
