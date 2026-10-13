@@ -6,7 +6,7 @@
 
 <h2>Getting Started</h2>
 
-<p>To get started either get the latest version from <code>dist/DS3.3.js</code>,or create a version on our <a href="https://daveshade.obviousstudios.dev/download/">website</a> then you can drop it into your project. After that you should be good to add the script through importing or through a new script tag.</p>
+<p>To get started either get the latest version from <code>dist/DS3.3.js</code> or create a version on <a href="https://daveshade.obviousstudios.dev/download/"> the website</a>. After that you should be good to add the script through importing or through a new script tag.</p>
 
 <p>Once DaveShade is added you can create an instance like this,</p>
 
