@@ -6,7 +6,7 @@
 
 <h2>Getting Started</h2>
 
-<p>To get started get the latest version from <code>dist/DS3.2.js</code> and drop it into your project. After that you should be good to add the script to your main HTML file.</p>
+<p>To get started either get the latest version from <code>dist/DS3.3.js</code>,or create a version on our <a href="https://daveshade.obviousstudios.dev/download/">website</a> then you can drop it into your project. After that you should be good to add the script through importing or through a new script tag.</p>
 
 <p>Once DaveShade is added you can create an instance like this,</p>
 
@@ -59,7 +59,7 @@ const myBuffer = instance.buffersFromJSON({
     ]
 });
 
-//Then we will bindit to our shader.
+//Then we will bind it to our shader.
 myShader.setBuffers(myBuffer);
 //There is also "shader.setBuffersRaw" but that uses the raw json and is slower.
 
